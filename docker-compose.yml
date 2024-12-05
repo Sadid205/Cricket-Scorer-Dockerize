@@ -1,0 +1,47 @@
+
+services:
+  # Django Backend
+  backend:
+    build:
+      context: ./backend  # backend ফোল্ডারের মধ্যে Dockerfile খুঁজবে
+      dockerfile: Dockerfile  # backend ফোল্ডারে অবস্থিত Dockerfile
+    container_name: cricket_scorer_frontend
+    volumes:
+      - ./backend:/app
+      - ./backend/.env:/app/.env
+      # - D:\0.Phitron\Modules\Software_Development_Project_date_04_05_24\Final_Exam_Coastal_Peace_Hotel_Booking\Coastal_Peace_Hotel_Booking\backend\coastal_peace_hotel_booking\.env:/app/.env"
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=1
+    depends_on:
+      - db
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: cricket_scorer_backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - ./frontend/.env:/app/.env
+      # - D:\0.Phitron\Modules\Software_Development_Project_date_04_05_24\Final_Exam_Coastal_Peace_Hotel_Booking\Coastal_Peace_Hotel_Booking\frontend\.env:/app/.env"
+    ports:
+      - "5173:5173"
+
+  # PostgreSQL Database
+  db:
+    image: postgres:14
+    environment:
+      POSTGRES_DB: cricket_scorer_database
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: 1234
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:
