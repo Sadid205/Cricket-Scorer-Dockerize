@@ -42,11 +42,13 @@ CORS_ORIGIN_WHITELIST = [
 SITE_ID = 1
 
 INSTALLED_APPS = [
+    'daphne',
     'whitenoise.runserver_nostatic',
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
     'django.contrib.sites',
+    'channels',
     'author',
     'balls',
     'batsman',
@@ -132,6 +134,16 @@ DATABASES = {
     }
 }
 
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND':'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('cricket_scorer-redis-1',6379)]
+        },
+    },
+}
+
+ASGI_APPLICATION = 'cricketscorer.asgi.application'
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators

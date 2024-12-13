@@ -16,6 +16,8 @@ services:
       - DEBUG=1
     depends_on:
       - db
+    networks:
+      - mynetwork
 
   # React Frontend
   frontend:
@@ -30,6 +32,8 @@ services:
       # - D:\0.Phitron\Modules\Software_Development_Project_date_04_05_24\Final_Exam_Coastal_Peace_Hotel_Booking\Coastal_Peace_Hotel_Booking\frontend\.env:/app/.env"
     ports:
       - "5173:5173"
+    networks:
+      - mynetwork
 
   # PostgreSQL Database
   db:
@@ -42,6 +46,20 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    networks:
+      - mynetwork
+  #redis setup    
+  redis:
+    image: "redis:latest"
+    ports:
+      - "6379:6379"
+    networks:
+      - mynetwork
+
+networks:
+  mynetwork:
+    driver: bridge
 
 volumes:
   postgres_data:
+  redis_data:

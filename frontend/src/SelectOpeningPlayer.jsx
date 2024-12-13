@@ -28,7 +28,6 @@ const SelectOpeningPlayer = ()=>{
             // console.log(select_player_response)
             if (select_player_response){
                 setLoading(false)
-                localStorage.setItem("current_over","0")
             }
             navigate('/count_runs')
         }
@@ -63,8 +62,8 @@ const SelectOpeningPlayer = ()=>{
             </div>
             <div className="flex justify-center">
                 <Link onClick={onSubmit} className="w-64 font-bold p-2 flex items-center justify-center rounded-xl text-center text-white bg-green-600">{loading?(
-                    <div class="animate-spin inline-block size-6 border-[3px] border-current border-t-transparent text-blue-600 rounded-full dark:text-blue-500" role="status" aria-label="loading">
-                    <span class="sr-only">Loading...</span>
+                    <div className="animate-spin inline-block size-6 border-[3px] border-current border-t-transparent text-blue-600 rounded-full dark:text-blue-500" role="status" aria-label="loading">
+                    <span className="sr-only">Loading...</span>
                   </div>
                 ):("Start Match")}</Link>
             </div>

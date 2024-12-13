@@ -1,4 +1,4 @@
-from django.urls import path,include
+from django.urls import path
 from .views import MatchViewSet,StartMatchView,SelectOpeningPlayerView,UpdateScoreView,GetOversListView,SelectNewBowlerView,StartSecondInningsView
 urlpatterns = [
     path('list/',MatchViewSet.as_view({'get':'list'}),name='match_list'),
@@ -11,3 +11,4 @@ urlpatterns = [
     path('add_new_over/',SelectNewBowlerView.as_view(),name="add_new_over"),
     path('start_second_innings/',StartSecondInningsView.as_view(),name="start_second_innings"),
 ]
+

@@ -14,19 +14,13 @@ const CountRuns = ()=>{
     const [swapBatsman,setSwapBatsman] = useState(false)
     const [run,setRun] = useState(-1)
     const [score,setScore] = useState()
-    const [strikerData,setStrikerData] = useState()
-    const [nonStrikerData,setNonStrikerData] = useState()
-    const [battingTeamData,setBattingTeamData] = useState()
-    const [oversData,setOversData] = useState()
-    const [strikerPlayer,setStrikerPlayer] = useState()
-    const [nonStrikerPlayer,setNonStrikerPlayer] = useState()
     const [showModal,setShowModal] = useState(false)
     const [bowlerName,setBowlerName] = useState("")
     const [showWicketModal,setShowWicketModal] = useState(false)
     const [howWicketFall,setHowWicketFall] = useState("Bowled")
     const [whoHelped,setWhoHelped] = useState("Fielder")
     const [newBatsman,setNewBatsman] = useState("New Batsman")
-    const [pendingRun,setPendintRun] = useState(null)
+    const [pendingRun,setPendingRun] = useState(null)
     const [showSecondInningsModal,setShowSecondInningsModal] = useState(false)
     const [secondInningsStriker,setSecondInningsStriker] = useState("")
     const [secondInningsNonStriker,setSecondInningsNonStriker] = useState("")
@@ -34,134 +28,85 @@ const CountRuns = ()=>{
     const [showMatchFinishedModal,setShowMatchFinishedModal] = useState(false)
     const [loading,setLoading] = useState(false)
     const VITE_REQUEST_URL=import.meta.env.VITE_REQUEST_URL
+    const [socket,setSocket] = useState(null)
+    const [increase,setIncrease] = useState(0)
+   useEffect(()=>{
+    const socketInstance = new WebSocket(`ws://localhost:8000/ws/test/${match_id}/`);
+    socketInstance.onopen = function(event){
+      const match_data = JSON.parse(event.data)
+      setScore(match_data)
+      console.log("hello")
+    }
+    socketInstance.onmessage = function(event){
+        const match_data = JSON.parse(event.data)
+        // console.log('received data:',match_data);
+        setScore(match_data)
+        setWideChecked(false)
+        setNoBallChecked(false)
+        setByesChecked(false)
+        setLegByesChecked(false)
+        setWicketChecked(false)
+    };
+    socketInstance.onerror = function(error){
+        console.log('websocket eror',error)
+    }
+    socketInstance.onclose = function(event){
+        console.log('websocket connection closed!')
+    }
+    setSocket(socketInstance)
+
+    return ()=>{
+        socketInstance.close();
+    }
+   },[match_id])
+   const sendData = ()=>{
+    const data = {
+        "match_id":match_id,
+        "run":run,
+        "wide":wideChecked,
+        "byes":byesChecked,
+        "legByes":legByesChecked,
+        "no_ball":noBallChecked,
+        "wicket":wicketChecked,
+        "how_wicket_fall":howWicketFall,
+        "who_helped":whoHelped,
+        "new_batsman":newBatsman
+        }
+    if(socket && socket.readyState === WebSocket.OPEN){
+        socket.send(JSON.stringify(data))
+        console.log("Data sent",data)
+    }
+   }
+   useEffect(()=>{
+    sendData()
+   },[increase])
     useEffect(()=>{
-        const current_over = localStorage.getItem('current_over')
-        if(score?.innings==="1st"){
-            if((oversData?.fi_all_overs<score.total_over)&&(oversData?.fi_all_overs>parseInt(current_over))){
-                setShowModal(true)
-            }
+        // const current_over = localStorage.getItem('current_over')
+        const current_over = score?.updated_data?.over
+        const total_over = score?.updated_data?.total_over
+        const nth_ball = score?.updated_data?.nth_ball
+        if( current_over != total_over-1 && current_over!=total_over && nth_ball==5){
+            setShowModal(true)
+            localStorage.setItem("over_finished","true")
         }
-        if(score?.innings==="2nd"){
-            if((oversData?.si_all_overs<score.total_over)&&(oversData?.si_all_overs>parseInt(current_over))){
-                setShowModal(true)
-            }
-        }
-    })
+    },[increase])
 
     useEffect(()=>{
-        if (score?.match_status==="First innings finished"){
-            setShowSecondInningsModal(true)
-        }
-        if(score?.is_match_finished==true){
-            setShowMatchFinishedModal(true)
-        }
-    })
-    // useEffect(()=>{
-    //     console.log(score?.nth_ball)
-    // },[score?.nth_ball,score?.first_innings_run,score?.second_innings_run])
-    useEffect(()=>{
-        const getMatchData = async()=>{
-            try{
-                setLoading(true)
-                const match_data = await fetch(`${VITE_REQUEST_URL}match/${match_id}/`,{method:'GET',headers:{ Authorization:`Token ${Token}`,
-                    "Content-Type":"application/json"}})
-                const match_data_response = await match_data.json()
-            if (match_data_response.striker && match_data_response.non_striker){
-                setScore(match_data_response)
-                const striker_data = await fetch(`${VITE_REQUEST_URL}batsman/${match_data_response.striker}/`,{method:'GET',headers:{ Authorization:`Token ${Token}`,
-                    "Content-Type":"application/json"}})
-                const response_striker_data = await striker_data.json()
-                setStrikerData(response_striker_data)
-                const non_striker_data = await fetch(`${VITE_REQUEST_URL}batsman/${match_data_response.non_striker}/`,{method:'GET',headers:{ Authorization:`Token ${Token}`,
-                    "Content-Type":"application/json"}})
-                const response_non_striker_data = await non_striker_data.json()
-                setNonStrikerData(response_non_striker_data)
-                if(response_striker_data.team){
-                    const batting_team_data = await fetch(`${VITE_REQUEST_URL}teams/${response_striker_data.team}/`,{method:'GET',headers:{ Authorization:`Token ${Token}`,
-                        "Content-Type":"application/json"}})
-                    const response_batting_team_data = await batting_team_data.json()
-                    setBattingTeamData(response_batting_team_data)
-                }
-                if(response_striker_data.player){
-                    const striker_player_data = await fetch(`${VITE_REQUEST_URL}player/${response_striker_data.player}/`,{method:'GET',headers:{ Authorization:`Token ${Token}`,
-                        "Content-Type":"application/json"}})
-                    const response_striker_player = await striker_player_data.json()
-                    setStrikerPlayer(response_striker_player)
-                }
-                if(response_non_striker_data.player){
-                    const non_striker_player_data = await fetch(`${VITE_REQUEST_URL}player/${response_non_striker_data.player}/`,{method:'GET',headers:{ Authorization:`Token ${Token}`,
-                        "Content-Type":"application/json"}})
-                    const response_non_striker_player = await non_striker_player_data.json()
-                    setNonStrikerPlayer(response_non_striker_player)
-                }
-            }
-                if(match_data_response){
-                    setLoading(false)
-                const overs_data =  await fetch(`${VITE_REQUEST_URL}match/get_overs_list/${match_id}/`,{method:'GET',headers:{ Authorization:`Token ${Token}`,
-                    "Content-Type":"application/json"}})
-                const overs_data_response = await overs_data.json()
-                setOversData(overs_data_response)
-                }
-            }catch(e){
-                console.log(e)
-            }
-        }
-        getMatchData()
-        
-        
-    },[])
-    // {oversData?.first_innings[oversData.fi_all_overs_length-1].balls.length>0?(oversData?.first_innings[oversData.fi_all_overs_length-1].balls.map((item,index)=>{
-    //     console.log(item.ball_type,item.runs)
-    // })):("")}
-    // {oversData?.innings==="1st" && oversData.first_innings[oversData.fi_all_overs_length-1].balls.length>0?(oversData?.first_innings[oversData.fi_all_overs_length-1].balls.map((item,index)=>{
-    //     console.log(item.ball_type,item.runs)
-    // })):""}
-    // {score?.innings==="1st"?(oversData?.first_innings[oversData.fi_all_overs_length-1].balls.length>0?(oversData.first_innings[oversData.fi_all_overs_length-1].balls.map((item,index)=>{console.log(item.ball_type,item.runs)})):("")):("")}
-    useEffect(()=>{
-        const setScore = async()=>{
-            // console.log({
-            //     "match_id":match_id,
-            //     "run":run,
-            //     "wide":wideChecked,
-            //     "byes":byesChecked,
-            //     "legByes":legByesChecked,
-            //     "no_ball":noBallChecked,
-            //     "wicket":wicketChecked,
-            //     "how_wicket_fall":howWicketFall,
-            //     "who_helped":whoHelped,
-            //     "new_batsman":newBatsman
-            // })
-            const updateScoreResponse = await fetch(`${VITE_REQUEST_URL}match/update_score/`,{method:'PUT',headers:{
-                Authorization:`Token ${Token}`,
-                "Content-Type":"application/json"
-            },body:JSON.stringify({
-                "match_id":match_id,
-                "run":run,
-                "wide":wideChecked,
-                "byes":byesChecked,
-                "legByes":legByesChecked,
-                "no_ball":noBallChecked,
-                "wicket":wicketChecked,
-                "how_wicket_fall":howWicketFall,
-                "who_helped":whoHelped,
-                "new_batsman":newBatsman
-                })
-            })
-            const scoreResponse = await updateScoreResponse.json()
-            // console.log(scoreResponse)
-        }
-        setScore()
-    },[run])
-    // useEffect(()=>{
-    //     if(wicketChecked==true){
-    //         setShowWicketModal(true)
-    //     }
-    // })
+      const current_over = score?.updated_data?.over
+      const total_over = score?.updated_data?.total_over
+      const nth_ball = score?.updated_data?.nth_ball
+      const wicket = score?.updated_data?.wicket
+      const innings = score?.updated_data?.innings 
+      if (innings=="1st" && current_over==total_over-1 && nth_ball==5 || innings=="1st" && wicket==10){
+          setShowSecondInningsModal(true)
+      }
+      if(score?.updated_data?.is_match_finished==true){
+          setShowMatchFinishedModal(true)
+      }
+    },[increase])
+    // console.log(score)
     const addNewBowler = async(e)=>{
         e.preventDefault()
-       if(bowlerName==""){
-        console.log("Please insert a bowler name.")
-       }else{
         const addNewBowlerRequest = await fetch(`${VITE_REQUEST_URL}match/add_new_over/`,{method:'PUT',headers:{
             Authorization:`Token ${Token}`,
             "Content-Type":"application/json"
@@ -170,13 +115,9 @@ const CountRuns = ()=>{
             "bowler_name":bowlerName
             })
         })
-        const addNewBowlerResponse = await addNewBowlerRequest.json()
-        if(addNewBowlerResponse){
-            localStorage.removeItem("current_over")
-            localStorage.setItem("current_over",`${score?.innings==="1st"?(oversData?.fi_all_overs):(oversData?.si_all_overs)}`)
-        }
-        console.log(addNewBowlerResponse)
-       }
+        await addNewBowlerRequest.json()
+        localStorage.removeItem("over_finished")
+        window.location.reload()
     }
     const doneSetRun=(e)=>{
         e.preventDefault()
@@ -184,15 +125,36 @@ const CountRuns = ()=>{
             setRun(pendingRun)
             setShowWicketModal(false)
         }
+        setIncrease((prevState)=>prevState+1)
+        window.location.reload()
     }
     const updateScore =(e,current_run)=>{
         e.preventDefault()
+        const over_finished = localStorage.getItem("over_finished")
+        const current_over = score?.updated_data?.over
+        const total_over = score?.updated_data?.total_over
+        const nth_ball = score?.updated_data?.nth_ball
+        const wicket = score?.updated_data?.wicket
+        const innings = score?.updated_data?.innings
+        if(over_finished=="true"){
+          setShowModal(true)
+          return
+        }
+        if (innings=="1st"&&current_over==total_over && nth_ball==0 || innings=="1st" && wicket==10){
+            setShowSecondInningsModal(true)
+            return
+        }
+        if(score?.updated_data?.is_match_finished==true){
+            setShowMatchFinishedModal(true)
+            return
+        }
         if(wicketChecked==true){
             setShowWicketModal(true)
-            setPendintRun(current_run)
+            setPendingRun(current_run)
         }
         else{
             setRun(current_run)
+            setIncrease((prevState)=>prevState+1)
         }
     }
 
@@ -262,28 +224,26 @@ const CountRuns = ()=>{
         })
         const response_start_second_innings = await request_start_second_innings.json()
         if (response_start_second_innings){
-            localStorage.removeItem("current_over")
-            localStorage.setItem("current_over","0")
+            window.location.reload()
         }
-        console.log(response_start_second_innings)
     }
-    // {score?.innings=="1st"?(oversData?.first_innings[oversData.fi_all_overs_length-1]?.bowler?(console.log(oversData?.first_innings[oversData.fi_all_overs_length-1]?.bowler)):(console.log("Bowler"))):(oversData?.second_innings[oversData.si_all_overs_length-1]?.bowler?(console.log(oversData?.second_innings[oversData.si_all_overs_length-1]?.bowler)):(console.log("Bowler")))}
+    console.log(score)
     return (
     <div style={{height:'100vh'}} className="mt-3">
        <div style={{ boxShadow: "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)"}} className="w-11/12 md:h-48 rounded-2xl md:flex bg-gray-200 justify-around p-4 m-auto bg-white">
             <div className="h-full text-center w-72 m-auto">
-                <p className="font-bold">{battingTeamData?battingTeamData.team_name:""},{score?.innings} inning</p>
+                <p className="font-bold">{score?(score.updated_data?(score.updated_data.batting_team_name):("")):("Batting Team")} Team,{score?(score.updated_data?(score.updated_data.innings):("")):("")} innings</p>
                 <div className="">
-                    <h1 className="text-6xl">{score?(score.innings=="1st"?score.first_innings_run:score.second_innings_run):0}-{score?(score.innings=="1st"?score.first_innings_wicket:score.second_innings_wicket):0}<span className="text-4xl">({score?(score.innings==='1st' ?(oversData?oversData.fi_all_overs:0):(oversData?oversData.si_all_overs:0)):0}.{score?score.nth_ball:0})</span></h1>
+                    <h1 className="text-6xl">{score?(score.updated_data?(score.updated_data.run):("00")):("00")} - {score?(score.updated_data?(score.updated_data.wicket):("0")):("0")} <span className="text-base font-bold">({score?(score.updated_data?(score.updated_data.over):("0")):("0")}.{score?(score.updated_data?(score.updated_data.nth_ball):("0")):("0")})</span></h1>
                 </div>
             </div>
             <div className="flex justify-center items-center">
-                <p className="text-xs font-bold">{score?score.match_status:""}</p>
+                <p className="text-xs font-bold">{score?(score.updated_data?(score.updated_data.status):("")):("")}</p>
             </div>
             <div className="h-full w-72 text-center m-auto">
                 <p className="font-bold">CURR</p>
                 <div>
-                    <h1 className="text-6xl">{score?(score.innings=="1st"?score.first_innings_run_rate.toFixed(2):score.second_innings_run_rate.toFixed(2)):0.00}</h1>
+                    <h1 className="text-6xl">{score?(score.updated_data?(score.updated_data.run_rate.toFixed(2)):("0.00")):("0.00")}</h1>
                 </div>
             </div>
        </div>
@@ -316,42 +276,42 @@ const CountRuns = ()=>{
                 <tbody>
                     <tr className="bg-white bg-white dark:border-gray-700">
                         <th scope="row" className="px-6 py-4 font-bold">
-                            {strikerPlayer?strikerPlayer.name:"Striker"}<span>*</span>
+                        {score?(score.updated_data?(score.updated_data.striker_name):("Striker")):("Striker")}<span>*</span>
                         </th>
                         <td className="px-6 py-4 font-bold">
-                            {strikerData?strikerData.run:0}
+                        {score?(score.updated_data?(score.updated_data.striker_run):("0")):("0")}
                         </td>
                         <td className="px-6 py-4 font-bold">
-                            {strikerData?strikerData.ball:0}
+                        {score?(score.updated_data?(score.updated_data.striker_bowl):("0")):("0")}
                         </td>
                         <td className="px-6 py-4 font-bold">
-                            {strikerData?strikerData.four:0}
+                        {score?(score.updated_data?(score.updated_data.striker_four):("0")):("0")}
                         </td>
                         <td className="px-6 py-4 font-bold">
-                            {strikerData?strikerData.six:0}
+                        {score?(score.updated_data?(score.updated_data.striker_six):("0")):("0")}
                         </td>
                         <td className="px-6 py-4 font-bold">
-                            {strikerData?strikerData.strike_rate.toFixed(2):0.00}
+                        {score?(score.updated_data?(score.updated_data.striker_strike_rate.toFixed(2)):("0.00")):("0.00")}
                         </td>
                     </tr>
                     <tr className="bg-white bg-white dark:border-gray-700">
                         <th scope="row" className="px-6 py-4 font-bold">
-                            {nonStrikerPlayer?nonStrikerPlayer.name:"Non Striker"}
+                        {score?(score.updated_data?(score.updated_data.non_striker_name):("Non Striker")):("Non Striker")}
                         </th>
                         <td className="px-6 py-4 font-bold">
-                        {nonStrikerData?nonStrikerData.run:0}
+                        {score?(score.updated_data?(score.updated_data.non_striker_run):("0")):("0")}
                         </td>
                         <td className="px-6 py-4 font-bold">
-                        {nonStrikerData?nonStrikerData.ball:0}
+                        {score?(score.updated_data?(score.updated_data.non_striker_bowl):("0")):("0")}
                         </td>
                         <td className="px-6 py-4 font-bold">
-                        {nonStrikerData?nonStrikerData.four:0}
+                        {score?(score.updated_data?(score.updated_data.non_striker_four):("0")):("0")}
                         </td>
                         <td className="px-6 py-4 font-bold">
-                        {nonStrikerData?nonStrikerData.six:0}
+                        {score?(score.updated_data?(score.updated_data.non_striker_six):("0")):("0")}
                         </td>
                         <td className="px-6 py-4 font-bold">
-                        {nonStrikerData?nonStrikerData.strike_rate.toFixed(2):0.00}
+                        {score?(score.updated_data?(score.updated_data.non_striker_strike_rate.toFixed(2)):("0.00")):("0.00")}
                         </td>
                     </tr>
                 </tbody>
@@ -384,26 +344,24 @@ const CountRuns = ()=>{
                 <tbody>
                     <tr className="bg-white bg-white dark:border-gray-700 font-bold font-bold">
                         <th scope="row" className="px-6 py-4">
-                            {score?.innings=="1st"?(oversData?.first_innings[oversData.fi_all_overs_length-1]?.bowler?(oversData?.first_innings[oversData.fi_all_overs_length-1]?.bowler.name):("Bowler")):(oversData?.second_innings[oversData.si_all_overs_length-1]?.bowler?(oversData?.second_innings[oversData.si_all_overs_length-1]?.bowler.name):("Bowler"))}
+                        {score?(score.updated_data?(score.updated_data.overs_data[score?.updated_data?.overs_data?.length-1].bowler?.name):("Bowler Name")):("Bowler Name")}
                         </th>
                         <td className="px-6 py-4">
                             <span>
-                            {score?.innings=="1st"?(oversData?.first_innings[oversData.fi_all_overs_length-1]?.bowler?(oversData?.first_innings[oversData.fi_all_overs_length-1]?.bowler.over):(0)):(oversData?.second_innings[oversData.si_all_overs_length-1]?.bowler?(oversData?.second_innings[oversData.si_all_overs_length-1]?.bowler.over):(0))}
-                            </span>.<span>
-                            {score?.innings=="1st"?(oversData?.first_innings[oversData.fi_all_overs_length-1]?.bowler?(oversData?.first_innings[oversData.fi_all_overs_length-1]?.bowler.nth_ball):(0)):(oversData?.second_innings[oversData.si_all_overs_length-1]?.bowler?(oversData?.second_innings[oversData.si_all_overs_length-1]?.bowler.nth_ball):(0))}
+                            {score?(score.updated_data?(score.updated_data.overs_data[score?.updated_data?.overs_data?.length-1].bowler?.over):("0")):("0")}.{score?(score.updated_data?(score.updated_data.overs_data[score?.updated_data?.overs_data?.length-1].bowler?.nth_ball):("0")):("0")}
                             </span>
                         </td>
                         <td className="px-6 py-4">
-                        {score?.innings=="1st"?(oversData?.first_innings[oversData.fi_all_overs_length-1]?.bowler?(oversData?.first_innings[oversData.fi_all_overs_length-1]?.bowler.madien_over):(0)):(oversData?.second_innings[oversData.si_all_overs_length-1]?.bowler?(oversData?.second_innings[oversData.si_all_overs_length-1]?.bowler.madien_over):(0))}
+                        {score?(score.updated_data?(score.updated_data.overs_data[score?.updated_data?.overs_data?.length-1].bowler?.madien_over):("0")):("0")}
                         </td>
                         <td className="px-6 py-4">
-                        {score?.innings=="1st"?(oversData?.first_innings[oversData.fi_all_overs_length-1]?.bowler?(oversData?.first_innings[oversData.fi_all_overs_length-1]?.bowler.run):(0)):(oversData?.second_innings[oversData.si_all_overs_length-1]?.bowler?(oversData?.second_innings[oversData.si_all_overs_length-1]?.bowler.run):(0))}
+                        {score?(score.updated_data?(score.updated_data.overs_data[score?.updated_data?.overs_data?.length-1].bowler?.run):("0")):("0")}
                         </td>
                         <td className="px-6 py-4">
-                        {score?.innings=="1st"?(oversData?.first_innings[oversData.fi_all_overs_length-1]?.bowler?(oversData?.first_innings[oversData.fi_all_overs_length-1]?.bowler.wicket):(0)):(oversData?.second_innings[oversData.si_all_overs_length-1]?.bowler?(oversData?.second_innings[oversData.si_all_overs_length-1]?.bowler.wicket):(0))}
+                        {score?(score.updated_data?(score.updated_data.overs_data[score?.updated_data?.overs_data?.length-1].bowler?.wicket):("0")):("0")}
                         </td>
                         <td className="px-6 py-4">
-                        {score?.innings=="1st"?(oversData?.first_innings[oversData.fi_all_overs_length-1]?.bowler?(oversData?.first_innings[oversData.fi_all_overs_length-1]?.bowler.economy_rate.toFixed(2)):(0.00)):(oversData?.second_innings[oversData.si_all_overs_length-1]?.bowler?(oversData?.second_innings[oversData.si_all_overs_length-1]?.bowler.economy_rate.toFixed(2)):(0.00))}
+                        {score?(score.updated_data?(score.updated_data.overs_data[score?.updated_data?.overs_data?.length-1].bowler?.economy_rate.toFixed(2)):("0.00")):("0.00")}
                         </td>
                     </tr>
                 </tbody>
@@ -413,15 +371,18 @@ const CountRuns = ()=>{
             <div className="flex">
                 <h1 className="font-bold text-xs md:text-base">This over:</h1>
                 <div className="overflow-x-auto flex">
-                {score?.innings==="1st"?(oversData?.first_innings[oversData.fi_all_overs_length-1].balls?.length>0?(oversData.first_innings[oversData.fi_all_overs_length-1].balls?.map((item,index)=>(
-                <div className="text-center" key={index}>
-                    <div className="w-8 bg-red-400 h-8 mx-3 text-white text-xs rounded-full flex justify-center items-center border-2 border-gray-400">{item.runs}</div>
-                    <p className="text-xs font-bold">{item.ball_type}</p>
-               </div>))):("")):(oversData?.second_innings[oversData.si_all_overs_length-1].balls?.length>0?(oversData.second_innings[oversData.si_all_overs_length-1].balls?.map((item,index)=>(
-                <div className="text-center" key={index}>
-                    <div className="w-8 bg-red-400 h-8 mx-3 text-white text-xs rounded-full flex justify-center items-center border-2 border-gray-400">{item.runs}</div>
-                    <p className="text-xs font-semibold text-gray-400">{item.ball_type}</p>
-               </div>))):(""))}
+                {score?(score.updated_data?(score.updated_data.overs_data[score?.updated_data?.overs_data?.length-1].balls?.map((ball,index)=>{
+                    return <div key={index} className="text-center">
+                    <div className="w-8 bg-red-400 h-8 mx-3 text-white text-xs rounded-full flex justify-center items-center border-2 border-gray-400">{ball.runs}</div>
+                    <p className="text-xs font-bold">{ball.ball_type}</p>
+               </div>
+                })):<div className="text-center">
+                <div className="w-8 bg-red-400 h-8 mx-3 text-white text-xs rounded-full flex justify-center items-center border-2 border-gray-400">0</div>
+                <p className="text-xs font-bold">DB</p>
+                </div>):(<div className="text-center">
+                    <div className="w-8 bg-red-400 h-8 mx-3 text-white text-xs rounded-full flex justify-center items-center border-2 border-gray-400">0</div>
+                    <p className="text-xs font-bold">DB</p>
+               </div>)}
                 </div>
             </div>
         </div>
@@ -486,13 +447,6 @@ const CountRuns = ()=>{
                 </div>
             </div>
         </div>
-        {/* <button
-        className="bg-pink-500 text-white active:bg-pink-600 font-bold uppercase text-sm px-6 py-3 rounded shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150"
-        type="button"
-        onClick={() => setShowModal(true)}
-      >
-        Open regular modal
-      </button> */}
       {showModal ? (
         <>
           <div
@@ -513,12 +467,12 @@ const CountRuns = ()=>{
                 </div>
                 {/*footer*/}
                 <div className="flex items-center justify-center p-6 border-t border-solid border-blueGray-200 rounded-b">
-                  <Link
+                  <button
                     className="bg-emerald-500 text-white active:bg-emerald-600 font-bold uppercase text-sm px-28 py-3 rounded shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150"
                     onClick={(e) => addNewBowler(e)}
-                  >
+                  disabled={bowlerName === ""}>
                     Done
-                  </Link>
+                  </button>
                 </div>
               </div>
             </div>
