@@ -1,5 +1,4 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
-from asgiref.sync import sync_to_async
 from channels.db import database_sync_to_async
 import json
 from balls.models import Balls
@@ -7,11 +6,20 @@ from player.models import Player
 from fielder.models import Fielder
 from batsman.models import Batsman
 from match.models import Match
-
+from fielding.models import Fielding
+from batting.models import Batting
+from bowling.models import Bowling
 
 @database_sync_to_async
 def add_nth_ball(existing_match):
+    bowling = Bowling.objects.filter(player__id=existing_match.current_bowler.player.id).first()
+    bowling.balls+=1
+    bowling.save()
     existing_match.nth_ball+=1
+    if existing_match.innings=="1st":
+        existing_match.first_innings_nth_ball+=1
+    else:
+        existing_match.second_innings_nth_ball+=1
     existing_match.save()
 
 @database_sync_to_async
@@ -49,11 +57,20 @@ def match_updates(existing_match,innings):
 
 @database_sync_to_async
 def only_run(existing_match,run,ball_types,innings):
+    batting = Batting.objects.filter(player__id=existing_match.striker.player.id).first()
+    bowling = Bowling.objects.filter(player__id=existing_match.current_bowler.player.id).first()
+    if run==0:
+        bowling.dot_balls+=1
+        bowling.save()
     if run==4:
         existing_match.striker.four+=1
+        batting.fours+=1
+        batting.save()
         existing_match.striker.save()
     if run==6:
         existing_match.striker.six+=1
+        batting.sixs+=1
+        batting.save()
         existing_match.striker.save()
     new_ball = Balls.objects.create(ball_types=ball_types,runs=str(run))
     if innings=="1st":
@@ -68,7 +85,17 @@ def only_run(existing_match,run,ball_types,innings):
         existing_match.second_innings_run+=run
     existing_match.striker.ball+=1
     existing_match.nth_ball+=1
+    if innings=="1st":
+        existing_match.first_innings_nth_ball+=1
+    else:
+        existing_match.second_innings_nth_ball+=1
     existing_match.striker.run+=run
+    batting.runs+=run
+    batting.balls+=1
+    batting.save()
+    bowling.runs+=run
+    bowling.balls+=1
+    bowling.save()
     existing_match.current_bowler.nth_ball+=1
     existing_match.current_bowler.run+=run
     existing_match.current_bowler.save()
@@ -82,25 +109,47 @@ def only_run(existing_match,run,ball_types,innings):
 
 @database_sync_to_async
 def wide_or_others(existing_match,no_ball,run,ball_types,innings):
+    batting = Batting.objects.filter(player__id=existing_match.striker.player.id).first()
+    bowling = Bowling.objects.filter(player__id=existing_match.current_bowler.player.id).first()
     if no_ball==True:
         existing_match.striker.run+=run
+        batting.runs+=run
+        batting.save()
         existing_match.striker.save()
         if run==4:
             existing_match.striker.four+=1
+            batting.fours+=1
+            batting.save()
             existing_match.striker.save()
         if run==6:
             existing_match.striker.six+=1
+            batting.sixs+=1
+            batting.save()
             existing_match.striker.save()
     if ball_types!="WD" and ball_types!="NB":
         existing_match.nth_ball+=1
+        if existing_match.innings=="1st":
+            existing_match.first_innings_nth_ball+=1
+        else:
+            existing_match.second_innings_nth_ball+=1
         existing_match.current_bowler.nth_ball+=1
         existing_match.current_bowler.save()
         existing_match.striker.ball+=1
+        bowling.balls+=1
+        bowling.save()
         existing_match.striker.save()
+    if ball_types =="WD":
+        bowling.wides+=1
+        bowling.save()
+    if ball_types =="NB":
+        bowling.no_balls+=1
+        bowling.save()
     new_ball = Balls.objects.create(ball_types=ball_types,runs=str(run))
     if innings=="1st":
         existing_match.first_innings_run+=(1+run)
         existing_match.current_bowler.run+=(1+run)
+        bowling.runs+=(1+run)
+        bowling.save()
         existing_match.current_bowler.save()
         over_fi_instance = existing_match.first_innings_over.last()
         over_fi_instance.ball.add(new_ball)
@@ -109,6 +158,8 @@ def wide_or_others(existing_match,no_ball,run,ball_types,innings):
     else:
         existing_match.second_innings_run+=(1+run)
         existing_match.current_bowler.run+=(1+run)
+        bowling.runs+=(1+run)
+        bowling.save()
         existing_match.current_bowler.save()
         over_si_instance = existing_match.second_innings_over.last()
         over_si_instance.ball.add(new_ball)
@@ -122,6 +173,8 @@ def wide_or_others(existing_match,no_ball,run,ball_types,innings):
 
 @database_sync_to_async
 def wicket_function(existing_match,existing_striker_or_non_striker,bowling_team,batting_team,new_batsman,how_wicket_fall,ball_types,runs,innings,who_helped=None):
+    batting = Batting.objects.filter(player__id=existing_match.striker.player.id).first()
+    bowling = Bowling.objects.filter(player__id=existing_match.current_bowler.player.id).first()
     # try:
     #     existing_batsman = Batsman.objects.get(id=existing_striker_or_non_striker.id)
     # except Batsman.DoesNotExist:
@@ -141,37 +194,88 @@ def wicket_function(existing_match,existing_striker_or_non_striker,bowling_team,
     newBall = Balls.objects.create(ball_types=ball_types,runs=runs)
     existing_match.current_bowler.nth_ball+=1
     existing_match.current_bowler.wicket+=1
+    bowling.wickets+=1
+    bowling.balls+=1
+    bowling.save()
+    batting.number_of_outs+=1
+    batting.save()
     existing_match.current_bowler.save()
     existing_over_instance.ball.add(newBall)
     existing_match.save()
+    fielding = None
+      
     if who_helped!=None:
         try:
-            existing_catch_player = Player.objects.get(name=who_helped)
+            existing_catch_player = Player.objects.get(name=who_helped,team=bowling_team)
         except Player.DoesNotExist:
             existing_catch_player = None
         if existing_catch_player!=None:
+            fielding = Fielding.objects.get_or_create(player=existing_catch_player,team=bowling_team)[0]
+            fielding.matches.add(existing_match)
+            fielding.save()
             try:
-                existing_fielder = Fielder.objects.get(player=existing_catch_player)
+                existing_fielder = Fielder.objects.get(player=existing_catch_player,team=bowling_team)
             except Fielder.DoesNotExist:
                 existing_fielder = None
             if existing_fielder!=None:
-                existing_striker_or_non_striker.catch_by = existing_fielder
+                if how_wicket_fall=="catch_out":
+                    existing_striker_or_non_striker.catch_by = existing_fielder
+                    fielding.catches+=1
+                    fielding.save()
+                if how_wicket_fall=="stumping":
+                    existing_striker_or_non_striker.stumping_by = existing_fielder
+                    fielding.stumpings+=1
+                    fielding.save()
+                if how_wicket_fall=="run_out_striker" or how_wicket_fall=="run_out_non_striker":
+                    existing_striker_or_non_striker.run_out_by = existing_fielder
+                    fielding.run_outs+=1
+                    fielding.save()
                 existing_striker_or_non_striker.save()
             else:
                 newFielder = Fielder.objects.create(player=existing_catch_player,team=bowling_team)
-                existing_striker_or_non_striker.catch_by = newFielder
+                if how_wicket_fall=="catch_out":
+                    existing_striker_or_non_striker.catch_by = newFielder
+                    fielding.catches+=1
+                    fielding.save()
+                if how_wicket_fall=="stumping":
+                    existing_striker_or_non_striker.stumping_by = newFielder
+                    fielding.stumpings+=1
+                    fielding.save()
+                if how_wicket_fall=="run_out_striker" or how_wicket_fall=="run_out_non_striker":
+                    existing_striker_or_non_striker.run_out_by = newFielder
+                    fielding.run_outs+=1
+                    fielding.save()
                 existing_striker_or_non_striker.save()
         else:
             newCatchPlayer = Player.objects.create(name=who_helped,team=bowling_team)
-            newCatchFielder = Fielder.objects.create(player=newCatchPlayer,team=bowling_team)
-            existing_striker_or_non_striker.catch_by = newCatchFielder
+            fielding = Fielding.objects.create(player=newCatchPlayer,team=bowling_team)
+            fielding.matches.add(existing_match)
+            new_fielder = Fielder.objects.create(player=newCatchPlayer,team=bowling_team)
+            if how_wicket_fall=="catch_out":
+                existing_striker_or_non_striker.catch_by = new_fielder
+                fielding.catches+=1
+                fielding.save()
+            if how_wicket_fall=="stumping":
+                existing_striker_or_non_striker.stumping_by = new_fielder
+                fielding.stumpings+=1
+                fielding.save()
+            if how_wicket_fall=="run_out_striker" or how_wicket_fall=="run_out_non_striker":
+                existing_striker_or_non_striker.run_out_by = new_fielder
+                fielding.run_outs+=1
+                fielding.save()
             existing_striker_or_non_striker.save()
+
     try:
-        existing_new_player = Player.objects.get(name=new_batsman)
+        existing_new_player = Player.objects.get(name=new_batsman,team=batting_team)
     except Player.DoesNotExist:
         existing_new_player = None
+    batting = None
     if existing_new_player!=None:
-        newBatsman = Batsman.objects.create(player=existing_new_player,team=batting_team)
+        newBatsman = Batsman.objects.create(match=existing_match,player=existing_new_player,team=batting_team)
+        batting = Batting.objects.get_or_create(player=existing_new_player,team=batting_team)[0]
+        batting.matches.add(existing_match)
+        batting.innings+=1
+        batting.save()
         if how_wicket_fall=="run_out_non_striker":
             existing_match.non_striker = newBatsman
         else:
@@ -180,7 +284,11 @@ def wicket_function(existing_match,existing_striker_or_non_striker,bowling_team,
         existing_match.save()
     else:
         newPlayer = Player.objects.create(name=new_batsman,team=batting_team)
-        newBatsman = Batsman.objects.create(player=newPlayer,team=batting_team)
+        newBatsman = Batsman.objects.create(match=existing_match,player=newPlayer,team=batting_team)
+        batting = Batting.objects.create(player=newPlayer,team=batting_team)
+        batting.matches.add(existing_match)
+        batting.innings+=1
+        batting.save()
         if how_wicket_fall=="run_out_non_striker":
             existing_match.non_striker = newBatsman
         else:
@@ -189,7 +297,9 @@ def wicket_function(existing_match,existing_striker_or_non_striker,bowling_team,
         existing_match.save()
 
 @database_sync_to_async
-def wide_and_wicket(existing_match,run,how_wicket_fall,existing_batsman,existing_over_instance,ball_types,runs,batting_team,bowling_team,new_batsman,wide,no_ball,innings):
+def wide_and_wicket(existing_match,run,how_wicket_fall,existing_batsman,existing_over_instance,ball_types,runs,batting_team,bowling_team,new_batsman,wide,no_ball,innings,who_helped=None):
+    batting = Batting.objects.filter(player__id=existing_match.striker.player.id).first()
+    bowling = Bowling.objects.filter(player__id=existing_match.current_bowler.player.id).first()
     newBall = Balls.objects.create(ball_types=ball_types,runs=runs)
     if innings=="1st":   
         existing_match.first_innings_run+=run
@@ -202,28 +312,98 @@ def wide_and_wicket(existing_match,run,how_wicket_fall,existing_batsman,existing
     existing_batsman.is_out = True
     existing_batsman.save()
     existing_match.current_bowler.wicket+=1
+    bowling.wickets+=1
+    if wide==True:
+        bowling.wides+=1
+        bowling.save()
+    batting.number_of_outs+=1
+    batting.save()
     existing_match.current_bowler.save()
     existing_over_instance.ball.add(newBall)
     existing_match.save()
-
-    if wide!=True or no_ball!=True:
-        existing_match.current_bowler.run+=run
-        existing_match.current_bowler.save()
-        existing_match.nth_ball+=1
+    fielding=None
+    if who_helped!=None:
         try:
-            existing_player = Player.objects.get(name=new_batsman)
+            existing_catch_player = Player.objects.get(name=who_helped,team=bowling_team)
         except Player.DoesNotExist:
-            existing_player = None
-        if existing_player!=None:
-            newBatsman = Batsman.objects.create(player=existing_player,team=batting_team)
-            if how_wicket_fall=="run_out_non_striker":
-                existing_match.non_striker = newBatsman
+            existing_catch_player = None
+        if existing_catch_player!=None:
+            fielding = Fielding.objects.get_or_create(player=existing_catch_player,team=bowling_team)[0]
+            fielding.matches.add(existing_match)
+            fielding.save()
+            try:
+                existing_fielder = Fielder.objects.get(player=existing_catch_player,team=bowling_team)
+            except Fielder.DoesNotExist:
+                existing_fielder = None
+            if existing_fielder!=None:
+                if how_wicket_fall=="stumping":
+                    existing_batsman.stumping_by = existing_fielder
+                    fielding.stumpings+=1
+                    fielding.save()
+                if how_wicket_fall=="run_out_striker" or how_wicket_fall=="run_out_non_striker":
+                    existing_batsman.run_out_by = existing_fielder
+                    fielding.run_outs+=1
+                    fielding.save()
+                existing_batsman.save()
             else:
-                existing_match.striker = newBatsman
-            existing_match.save()
+                newFielder = Fielder.objects.create(player=existing_catch_player,team=bowling_team)
+                if how_wicket_fall=="stumping":
+                    existing_batsman.stumping_by = newFielder
+                    fielding.stumpings+=1
+                    fielding.save()
+                if how_wicket_fall=="run_out_striker" or how_wicket_fall=="run_out_non_striker":
+                    existing_batsman.run_out_by = newFielder
+                    fielding.run_outs+=1
+                    fielding.save()
+                existing_batsman.save()
+        else:
+            newCatchPlayer = Player.objects.create(name=who_helped,team=bowling_team)
+            fielding = Fielding.objects.create(player=newCatchPlayer,team=bowling_team)
+            fielding.matches.add(existing_match)
+            new_fielder = Fielder.objects.create(player=newCatchPlayer,team=bowling_team)
+            if how_wicket_fall=="stumping":
+                existing_batsman.stumping_by = new_fielder
+                fielding.stumpings+=1
+                fielding.save()
+            if how_wicket_fall=="run_out_striker" or how_wicket_fall=="run_out_non_striker":
+                existing_batsman.run_out_by = new_fielder
+                fielding.run_outs+=1
+                fielding.save()
+            existing_batsman.save()
+
+        if wide!=True and no_ball!=True:
+            existing_match.current_bowler.run+=run
+            bowling.runs+=run
+            bowling.balls+=1
+            bowling.save()
+            existing_match.current_bowler.save()
+            existing_match.nth_ball+=1
+            if existing_match.innings=="1st":
+                existing_match.first_innings_nth_ball+=1
+            else:
+                existing_match.second_innings_nth_ball+=1
+    try:
+        existing_player = Player.objects.get(name=new_batsman,team=batting_team)
+    except Player.DoesNotExist:
+        existing_player = None
+    if existing_player!=None:
+        newBatsman = Batsman.objects.create(match=existing_match,player=existing_player,team=batting_team)
+        newBatting = Batting.objects.get_or_create(player=existing_player,team=batting_team)[0]
+        newBatting.matches.add(existing_match)
+        newBatting.innings+=1
+        newBatting.save()
+        if how_wicket_fall=="run_out_non_striker":
+            existing_match.non_striker = newBatsman
+        else:
+            existing_match.striker = newBatsman
+        existing_match.save()
     else:
         newPlayer = Player.objects.create(name=new_batsman,team=batting_team)
-        newBatsman = Batsman.objects.create(player=newPlayer,team=batting_team)
+        newBatsman = Batsman.objects.create(match=existing_match,player=newPlayer,team=batting_team)
+        newBatting = Batting.objects.get_or_create(player=newPlayer,team=batting_team)[0]
+        newBatting.matches.add(existing_match)
+        newBatting.innings+=1
+        newBatting.save()
         if how_wicket_fall=="run_out_non_striker":
             existing_match.non_striker = newBatsman
         else:
@@ -231,6 +411,10 @@ def wide_and_wicket(existing_match,run,how_wicket_fall,existing_batsman,existing
         existing_match.save()
 
 # @database_sync_to_async
+@database_sync_to_async
+def save_match(existing_match):
+    existing_match.save()
+
 async def update_score(existing_match,toss_winner,host_team,visitor_team,elected,wicket,wide,no_ball,byes,legByes,how_wicket_fall,run,new_batsman,who_helped,innings):
         # if innings=="1st" and existing_match.total_over==existing_match.first_innings_nth_over:
         #     existing_match.save()
@@ -267,84 +451,79 @@ async def update_score(existing_match,toss_winner,host_team,visitor_team,elected
 
             if toss_winner == host_team and elected=="Bat" or toss_winner==visitor_team and elected=="Bowl":
                 if wide==True and (how_wicket_fall=="run_out_striker" or how_wicket_fall=="run_out_non_striker"):
-                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="WD&RO",runs="OUT",batting_team=host_team,bowling_team=visitor_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings)
+                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="WD&RO",runs="OUT",batting_team=host_team,bowling_team=visitor_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings,who_helped=who_helped)
                 elif wide==True and how_wicket_fall=="stumping":
-                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="WD&S",runs="OUT",batting_team=host_team,bowling_team=visitor_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings)
+                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="WD&S",runs="OUT",batting_team=host_team,bowling_team=visitor_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings,who_helped=who_helped)
                 elif wide==True and how_wicket_fall=="hit_wicket":
-                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="WD&HW",runs="OUT",batting_team=host_team,bowling_team=visitor_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings)
+                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="WD&HW",runs="OUT",batting_team=host_team,bowling_team=visitor_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings,who_helped=who_helped)
                 elif no_ball==True and how_wicket_fall=="bowled":
-                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="NO&B",runs="OUT",batting_team=host_team,bowling_team=visitor_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings)
+                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="NO&B",runs="OUT",batting_team=host_team,bowling_team=visitor_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings,who_helped=who_helped)
                 elif no_ball==True and how_wicket_fall=="catch_out":
-                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="NO&CO",runs="OUT",batting_team=host_team,bowling_team=visitor_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings)
+                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="NO&CO",runs="OUT",batting_team=host_team,bowling_team=visitor_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings,who_helped=who_helped)
                 elif no_ball==True and (how_wicket_fall=="run_out_striker" or how_wicket_fall=="run_out_non_striker"):
-                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="NO&RO",runs="OUT",batting_team=host_team,bowling_team=visitor_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings)
+                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="NO&RO",runs="OUT",batting_team=host_team,bowling_team=visitor_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings,who_helped=who_helped)
                 elif no_ball==True and how_wicket_fall=="stumping":
-                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="NO&S",runs="OUT",batting_team=host_team,bowling_team=visitor_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings)
+                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="NO&S",runs="OUT",batting_team=host_team,bowling_team=visitor_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings,who_helped=who_helped)
                 elif no_ball==True and how_wicket_fall=="lbw":
                     await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="NO&LBW",runs="OUT",batting_team=host_team,bowling_team=visitor_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings)
                 elif no_ball==True and how_wicket_fall=="hit_wicket":
-                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="NO&HW",runs="OUT",batting_team=host_team,bowling_team=visitor_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings)
+                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="NO&HW",runs="OUT",batting_team=host_team,bowling_team=visitor_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings,who_helped=who_helped)
                 elif (byes==True or legByes==True) and (how_wicket_fall=="run_out_striker" or how_wicket_fall=="run_out_non_striker"):
                     if byes==True:
-                        await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="BYE&RO",runs="OUT",batting_team=host_team,bowling_team=visitor_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings)
+                        await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="BYE&RO",runs="OUT",batting_team=host_team,bowling_team=visitor_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings,who_helped=who_helped)
                     else:
-                        await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="LGB&RO",runs="OUT",batting_team=host_team,bowling_team=visitor_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings)
+                        await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="LGB&RO",runs="OUT",batting_team=host_team,bowling_team=visitor_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings,who_helped=who_helped)
                 elif (byes==True or legByes==True) and (how_wicket_fall=="stumping"):
                     if byes==True:
-                        await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="BYE&S",runs="OUT",batting_team=host_team,bowling_team=visitor_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings)
+                        await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="BYE&S",runs="OUT",batting_team=host_team,bowling_team=visitor_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings,who_helped=who_helped)
                     else:
-                        await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="LGB&S",runs="OUT",batting_team=host_team,bowling_team=visitor_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings)
+                        await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="LGB&S",runs="OUT",batting_team=host_team,bowling_team=visitor_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings,who_helped=who_helped)
                 elif (byes==True or legByes==True) and (how_wicket_fall=="hit_wicket"):
                     if byes==True:
-                        await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="BYE&HW",runs="OUT",batting_team=host_team,bowling_team=visitor_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings)
+                        await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="BYE&HW",runs="OUT",batting_team=host_team,bowling_team=visitor_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings,who_helped=who_helped)
                     else:
-                        await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="LGB&HW",runs="OUT",batting_team=host_team,bowling_team=visitor_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings)
+                        await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="LGB&HW",runs="OUT",batting_team=host_team,bowling_team=visitor_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings,who_helped=who_helped)
                 else:
                     return "error:This rule does not exist in cricket."
             else:
                 if wide==True and (how_wicket_fall=="run_out_striker" or how_wicket_fall=="run_out_non_striker"):
-                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="WD&RO",runs="OUT",batting_team=visitor_team,bowling_team=host_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings)
+                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="WD&RO",runs="OUT",batting_team=visitor_team,bowling_team=host_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings,who_helped=who_helped)
                 elif wide==True and how_wicket_fall=="stumping":
-                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="WD&S",runs="OUT",batting_team=visitor_team,bowling_team=host_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings)
+                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="WD&S",runs="OUT",batting_team=visitor_team,bowling_team=host_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings,who_helped=who_helped)
                 elif wide==True and how_wicket_fall=="hit_wicket":
-                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="WD&HW",runs="OUT",batting_team=visitor_team,bowling_team=host_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings)
+                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="WD&HW",runs="OUT",batting_team=visitor_team,bowling_team=host_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings,who_helped=who_helped)
                 elif no_ball==True and how_wicket_fall=="bowled":
-                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="NO&B",runs="OUT",batting_team=visitor_team,bowling_team=host_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings)
+                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="NO&B",runs="OUT",batting_team=visitor_team,bowling_team=host_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings,who_helped=who_helped)
                 elif no_ball==True and how_wicket_fall=="catch_out":
-                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="NO&CO",runs="OUT",batting_team=visitor_team,bowling_team=host_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings)
+                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="NO&CO",runs="OUT",batting_team=visitor_team,bowling_team=host_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings,who_helped=who_helped)
                 elif no_ball==True and (how_wicket_fall=="run_out_striker" or how_wicket_fall=="run_out_non_striker"):
-                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="NO&RO",runs="OUT",batting_team=visitor_team,bowling_team=host_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings)
+                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="NO&RO",runs="OUT",batting_team=visitor_team,bowling_team=host_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings,who_helped=who_helped)
                 elif no_ball==True and how_wicket_fall=="stumping":
-                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="NO&S",runs="OUT",batting_team=visitor_team,bowling_team=host_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings)
+                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="NO&S",runs="OUT",batting_team=visitor_team,bowling_team=host_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings,who_helped=who_helped)
                 elif no_ball==True and how_wicket_fall=="lbw":
-                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="NO&LBW",runs="OUT",batting_team=visitor_team,bowling_team=host_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings)
+                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="NO&LBW",runs="OUT",batting_team=visitor_team,bowling_team=host_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings,who_helped=who_helped)
                 elif no_ball==True and how_wicket_fall=="hit_wicket":
-                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="NO&HW",runs="OUT",batting_team=visitor_team,bowling_team=host_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings)
+                    await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="NO&HW",runs="OUT",batting_team=visitor_team,bowling_team=host_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings,who_helped=who_helped)
                 elif (byes==True or legByes==True) and (how_wicket_fall=="run_out_striker" or how_wicket_fall=="run_out_non_striker"):
                     if byes==True:
-                        await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="BYE&RO",runs="OUT",batting_team=visitor_team,bowling_team=host_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings)
+                        await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="BYE&RO",runs="OUT",batting_team=visitor_team,bowling_team=host_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings,who_helped=who_helped)
                     else:
-                        await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="LGB&RO",runs="OUT",batting_team=visitor_team,bowling_team=host_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings)
+                        await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="LGB&RO",runs="OUT",batting_team=visitor_team,bowling_team=host_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings,who_helped=who_helped)
                 elif (byes==True or legByes==True) and (how_wicket_fall=="stumping"):
                     if byes==True:
-                        await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="BYE&S",runs="OUT",batting_team=visitor_team,bowling_team=host_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings)
+                        await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="BYE&S",runs="OUT",batting_team=visitor_team,bowling_team=host_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings,who_helped=who_helped)
                     else:
-                        await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="LGB&S",runs="OUT",batting_team=visitor_team,bowling_team=host_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings)
+                        await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="LGB&S",runs="OUT",batting_team=visitor_team,bowling_team=host_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings,who_helped=who_helped)
                 elif (byes==True or legByes==True) and (how_wicket_fall=="hit_wicket"):
                     if byes==True:
-                        await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="BYE&HW",runs="OUT",batting_team=visitor_team,bowling_team=host_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings)
+                        await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="BYE&HW",runs="OUT",batting_team=visitor_team,bowling_team=host_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings,who_helped=who_helped)
                     else:
-                        await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="LGB&HW",runs="OUT",batting_team=visitor_team,bowling_team=host_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings)
+                        await wide_and_wicket(existing_match=existing_match,run=run,how_wicket_fall=how_wicket_fall,existing_batsman=existing_batsman,existing_over_instance=existing_over_instance,ball_types="LGB&HW",runs="OUT",batting_team=visitor_team,bowling_team=host_team,new_batsman=new_batsman,wide=wide,no_ball=no_ball,innings=innings,who_helped=who_helped)
                 else:
                     return "error:This rule does not exist in cricket."    
             return "success:Successfully added a new batsman."                
 
         if wicket==True:
-            # existing_match.nth_ball+=1
-            # existing_match.save()
-            # existing_striker = existing_match.striker
-            # existing_non_striker = existing_match.non_striker
-            # existing_match.save()
             existing_striker = await get_existing_striker(existing_match=existing_match)
             existing_non_striker = await get_existing_non_striker(existing_match=existing_match)
             await add_nth_ball(existing_match)
@@ -413,6 +592,7 @@ async def update_score(existing_match,toss_winner,host_team,visitor_team,elected
                 await only_run(existing_match=existing_match,run=run,ball_types="Six",innings=innings)
             elif run==0:
                 await only_run(existing_match=existing_match,run=run,ball_types="DB",innings=innings)
+        await save_match(existing_match=existing_match)
         return "Update Success!"
 
 @database_sync_to_async

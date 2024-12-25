@@ -1,10 +1,19 @@
 from rest_framework import serializers
 from .models import Match
+from team.serializers import TeamSerializer
 
 class MatchSerializer(serializers.ModelSerializer):
     class Meta:
         model = Match
         fields = '__all__'
+
+class MatchListSerializer(serializers.ModelSerializer):
+    team1 = TeamSerializer()
+    team2 = TeamSerializer()
+
+    class Meta:
+        model = Match
+        fields = ['id','date','toss_winner','elected','team1','team2','first_innings_run','first_innings_wicket','second_innings_run','second_innings_wicket','first_innings_nth_over','second_innings_nth_over','nth_ball','match_status','first_innings_nth_ball','second_innings_nth_ball']
 
 
 class StartMatchSerializer(serializers.Serializer):

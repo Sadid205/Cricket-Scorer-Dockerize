@@ -1,6 +1,7 @@
 import { Link,Navigate, useNavigate} from "react-router-dom";
 import { RxCross1 } from "react-icons/rx";
 import { useState,useEffect } from "react";
+import { ToastContainer,toast } from "react-toastify";
 const CountRuns = ()=>{
     const Token = localStorage.getItem("Token")
     const navigate = useNavigate()
@@ -17,9 +18,9 @@ const CountRuns = ()=>{
     const [showModal,setShowModal] = useState(false)
     const [bowlerName,setBowlerName] = useState("")
     const [showWicketModal,setShowWicketModal] = useState(false)
-    const [howWicketFall,setHowWicketFall] = useState("Bowled")
-    const [whoHelped,setWhoHelped] = useState("Fielder")
-    const [newBatsman,setNewBatsman] = useState("New Batsman")
+    const [howWicketFall,setHowWicketFall] = useState("")
+    const [whoHelped,setWhoHelped] = useState("")
+    const [newBatsman,setNewBatsman] = useState("")
     const [pendingRun,setPendingRun] = useState(null)
     const [showSecondInningsModal,setShowSecondInningsModal] = useState(false)
     const [secondInningsStriker,setSecondInningsStriker] = useState("")
@@ -85,11 +86,11 @@ const CountRuns = ()=>{
         const current_over = score?.updated_data?.over
         const total_over = score?.updated_data?.total_over
         const nth_ball = score?.updated_data?.nth_ball
-        if( current_over != total_over-1 && current_over!=total_over && nth_ball==5){
+        if( current_over < total_over-1 && nth_ball==6){
             setShowModal(true)
             localStorage.setItem("over_finished","true")
         }
-    },[increase])
+    },[score?.updated_data?.overs_data])
 
     useEffect(()=>{
       const current_over = score?.updated_data?.over
@@ -97,16 +98,23 @@ const CountRuns = ()=>{
       const nth_ball = score?.updated_data?.nth_ball
       const wicket = score?.updated_data?.wicket
       const innings = score?.updated_data?.innings 
-      if (innings=="1st" && current_over==total_over-1 && nth_ball==5 || innings=="1st" && wicket==10){
+      if ((innings=="1st" && current_over==total_over && nth_ball==0) || (innings=="1st" && wicket==10)){
           setShowSecondInningsModal(true)
       }
-      if(score?.updated_data?.is_match_finished==true){
+      if((innings=="2nd" && current_over==total_over && nth_ball==0) || (score?.updated_data?.is_match_finished==true) || (innings=="2nd" && wicket==10)){
           setShowMatchFinishedModal(true)
       }
-    },[increase])
+    },[score?.updated_data?.overs_data])
     // console.log(score)
     const addNewBowler = async(e)=>{
         e.preventDefault()
+        if(bowlerName===""){
+          const notify = ()=>{
+            toast("Name can not be empty!")
+          }
+          notify()
+          return
+        }
         const addNewBowlerRequest = await fetch(`${VITE_REQUEST_URL}match/add_new_over/`,{method:'PUT',headers:{
             Authorization:`Token ${Token}`,
             "Content-Type":"application/json"
@@ -121,6 +129,30 @@ const CountRuns = ()=>{
     }
     const doneSetRun=(e)=>{
         e.preventDefault()
+        if(howWicketFall===""||newBatsman===""){
+          if(howWicketFall===""){
+            const notify = ()=>{
+              toast("How wicket fall dose not selected!")
+            }
+            notify()
+          }
+          if(newBatsman===""){
+            const notify = ()=>{
+              toast("New batsman can not be empty!")
+            }
+            notify()
+          }
+          return
+        }
+        if(howWicketFall=="catch_out" || howWicketFall=="run_out_striker" || howWicketFall=="run_out_non_striker" || howWicketFall=="stumping"){
+          if(whoHelped===""){
+            const notify = ()=>{
+              toast("Who helped can not be empty!")
+            }
+            notify()
+            return 
+          }
+        }
         if(pendingRun!=null){
             setRun(pendingRun)
             setShowWicketModal(false)
@@ -140,11 +172,11 @@ const CountRuns = ()=>{
           setShowModal(true)
           return
         }
-        if (innings=="1st"&&current_over==total_over && nth_ball==0 || innings=="1st" && wicket==10){
+        if ((innings=="1st"&&current_over==total_over && nth_ball==0) || (innings=="1st" && wicket==10)){
             setShowSecondInningsModal(true)
             return
         }
-        if(score?.updated_data?.is_match_finished==true){
+        if((innings=="1st"&&current_over==total_over && nth_ball==0) || score?.updated_data?.is_match_finished==true || (innings=="2nd" && wicket==10)){
             setShowMatchFinishedModal(true)
             return
         }
@@ -165,14 +197,22 @@ const CountRuns = ()=>{
             setByesChecked(false)
             setLegByesChecked(false)
         }
-        if(name=="noBall" && checked==true || name=="byes" && checked == true || name=="legByes" && checked==true ){
-            setWideChecked(false)
+        if((name=="noBall" && checked==true) && (name=="wicket" && checked==true)){
+          setNoBallChecked(false)
+        }
+        if(name=="noBall" && checked==true){
+          setWicketChecked(false)
+          setWideChecked(false)
+        }
+        if(name=="wicket" && checked==true){
+          setNoBallChecked(false)
         }
         if(name=="byes" && checked==true){
             setLegByesChecked(false)
         }
         if(name=='legByes' && checked==true){
             setByesChecked(false)
+            setWideChecked(false)
         }
     }
     const handle_wide_checked = (e)=>{
@@ -212,6 +252,27 @@ const CountRuns = ()=>{
     }
     const startSecondInnings= async(e)=>{
         e.preventDefault()
+        if(secondInningsStriker==="" || secondInningsNonStriker==="" || secondInningsBowler===""){
+          if(secondInningsStriker===""){
+            const notify = ()=>{
+              toast("Striker name can not be empty!")
+            }
+            notify()
+          }
+          if(secondInningsNonStriker===""){
+            const notify = ()=>{
+              toast("Non-Striker name can not be empty!")
+            }
+            notify()
+          }
+          if(secondInningsBowler===""){
+            const notify = ()=>{
+              toast("Bowler name can not be empty!")
+            }
+            notify()
+          }
+          return
+        }
         const request_start_second_innings = await fetch(`${VITE_REQUEST_URL}match/start_second_innings/`,{method:'PUT',headers:{
             Authorization:`Token ${Token}`,
             "Content-Type":"application/json"
@@ -224,10 +285,11 @@ const CountRuns = ()=>{
         })
         const response_start_second_innings = await request_start_second_innings.json()
         if (response_start_second_innings){
-            window.location.reload()
+          localStorage.removeItem("over_finished")
+          window.location.reload()
         }
     }
-    console.log(score)
+    // console.log(score)
     return (
     <div style={{height:'100vh'}} className="mt-3">
        <div style={{ boxShadow: "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)"}} className="w-11/12 md:h-48 rounded-2xl md:flex bg-gray-200 justify-around p-4 m-auto bg-white">
@@ -470,7 +532,7 @@ const CountRuns = ()=>{
                   <button
                     className="bg-emerald-500 text-white active:bg-emerald-600 font-bold uppercase text-sm px-28 py-3 rounded shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150"
                     onClick={(e) => addNewBowler(e)}
-                  disabled={bowlerName === ""}>
+                  >
                     Done
                   </button>
                 </div>
@@ -611,6 +673,9 @@ const CountRuns = ()=>{
           <div className="opacity-25 fixed inset-0 z-40 bg-black"></div>
         </>
       ) : null}
+       <div>
+          <ToastContainer />
+        </div>
     </div>
     )
 }

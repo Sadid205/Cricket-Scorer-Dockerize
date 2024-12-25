@@ -1,7 +1,7 @@
 from django.urls import path
-from .views import MatchViewSet,StartMatchView,SelectOpeningPlayerView,UpdateScoreView,GetOversListView,SelectNewBowlerView,StartSecondInningsView
+from .views import MatchViewSet,StartMatchView,SelectOpeningPlayerView,UpdateScoreView,GetOversListView,SelectNewBowlerView,StartSecondInningsView,MatchListViewSet
 urlpatterns = [
-    path('list/',MatchViewSet.as_view({'get':'list'}),name='match_list'),
+    path('list/<int:author_id>/',MatchListViewSet.as_view({'get':'list'}),name='match_list'),
     path('add/',MatchViewSet.as_view({'post':'create'}),name='add_match'),
     path('<int:pk>/',MatchViewSet.as_view({'get':'retrieve','put':'update','patch':'partial_update','delete':'destroy'}),name='match_details'),
     path('start/',StartMatchView.as_view(),name="start_match"),

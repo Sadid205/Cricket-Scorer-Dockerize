@@ -3,9 +3,9 @@ services:
   # Django Backend
   backend:
     build:
-      context: ./backend  # backend ফোল্ডারের মধ্যে Dockerfile খুঁজবে
-      dockerfile: Dockerfile  # backend ফোল্ডারে অবস্থিত Dockerfile
-    container_name: cricket_scorer_frontend
+      context: ./backend  
+      dockerfile: Dockerfile  
+    container_name: cricket_scorer_backend
     volumes:
       - ./backend:/app
       - ./backend/.env:/app/.env
@@ -24,7 +24,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: cricket_scorer_backend
+    container_name: cricket_scorer_frontend
     volumes:
       - ./frontend:/app
       - /app/node_modules
