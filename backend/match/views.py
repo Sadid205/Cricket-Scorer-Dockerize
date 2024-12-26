@@ -11,8 +11,8 @@ from fielder.models import Fielder
 from batting.models import Batting
 from bowling.models import Bowling
 from author.models import Author
-from .serializers import MatchSerializer,StartMatchSerializer,SelectOpeningPlayerSerializer,UpdateScoreSerializer,SelectANewBowlerSerializer,StartSecondInningsSerializer,MatchListSerializer
-from rest_framework import viewsets
+from .serializers import MatchSerializer,StartMatchSerializer,SelectOpeningPlayerSerializer,UpdateScoreSerializer,SelectANewBowlerSerializer,StartSecondInningsSerializer,MatchListSerializer,ScoreBoardSerializer
+from rest_framework import viewsets,status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.authentication import TokenAuthentication
@@ -20,7 +20,39 @@ from rest_framework.permissions import IsAuthenticated
 from batting.models import Batting
 from bowling.models import Bowling
 from rest_framework import  status
+from rest_framework import generics
+from bowler.serializers import BowlerSerializer
+from batsman.serializers import BatsmanSerializer
 # Create your views here.
+
+class ScoreBoardViewSet(APIView):
+    def get(self,request,match_id):
+        try:
+            match = Match.objects.get(id=match_id)
+            
+            team1_batsmans = Batsman.objects.filter(team=match.team1)
+            team2_batsmans = Batsman.objects.filter(team=match.team2)
+
+            team1_bowlers = Bowler.objects.filter(team=match.team1)
+            team2_bowlers = Bowler.objects.filter(team=match.team2)
+
+        
+
+            team_1_batsmans_data = BatsmanSerializer(team1_batsmans,many=True).data
+            team_2_batsmans_data = BatsmanSerializer(team2_batsmans,many=True).data
+            team_1_bowlers_data = BowlerSerializer(team1_bowlers,many=True).data
+            team_2_bowlers_data = BowlerSerializer(team2_bowlers,many=True).data
+            match_data = ScoreBoardSerializer(match).data
+
+            return Response({
+                "match":match_data,
+                "team1_batsmans":team_1_batsmans_data,
+                "team2_batsmans":team_2_batsmans_data,
+                "team1_bowlers":team_1_bowlers_data,
+                "team2_bowlers":team_2_bowlers_data
+            },status=status.HTTP_200_OK)
+        except Match.DoesNotExist:
+            return Response({"detail":"Match not found"},status=status.HTTP_400_BAD_REQUEST)
 
 class MatchViewSet(viewsets.ModelViewSet):
     authentication_classes = [TokenAuthentication]
