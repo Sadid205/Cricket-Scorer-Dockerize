@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { MdDelete } from "react-icons/md";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 const History = ()=>{
     const navigate = useNavigate()
     const {author_id} = useParams()
@@ -18,7 +18,6 @@ const History = ()=>{
         }
         Matches()
     },[author_id,Token])
-    console.log(matches)
     const ResumeMatch = (e,match_id)=>{
         e.preventDefault()
         localStorage.removeItem("match_id")
@@ -110,7 +109,7 @@ const History = ()=>{
                     <p className="text-gray-600 font-semibold">{match.match_status}</p>
                     <div className="flex justify-evenly items-center">
                         <button onClick={(e)=>ResumeMatch(e,match.id)} className="font-semibold">Resume</button>
-                        <button className="font-semibold">Socreboard</button>
+                        <Link to={`scoreboard/${match.id}`} className="font-semibold">Socreboard</Link>
                         <button className="text-xl text-gray-600"><MdDelete/></button>
                     </div>
                 </div>

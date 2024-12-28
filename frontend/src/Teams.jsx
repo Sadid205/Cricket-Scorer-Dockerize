@@ -24,7 +24,7 @@ const Teams = ()=>{
         <div className="">
             {teams?.length>0?(
                 teams.map((item,index)=>{
-                    return <Link to={`/players/${item.id}`} key={index} style={{boxShadow: 'rgba(0, 0, 0, 0.3) 0px 19px 38px, rgba(0, 0, 0, 0.22) 0px 15px 12px'}} className="flex items-center h-16 gap-4 m-auto mb-4 rounded-md w-full md:w-4/5 p-4">
+                    return <Link to={`players/${item.id}`} key={index} style={{boxShadow: 'rgba(0, 0, 0, 0.3) 0px 19px 38px, rgba(0, 0, 0, 0.22) 0px 15px 12px'}} className="flex items-center h-16 gap-4 m-auto mb-4 rounded-md w-full md:w-4/5 p-4">
                     <div className="w-12 h-12 flex items-center justify-center rounded rounded-full font-bold text-white bg-green-500">
                         <h1 className="text-2xl">
                            {

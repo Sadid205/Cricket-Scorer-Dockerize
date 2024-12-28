@@ -49,7 +49,7 @@ const Header = ()=>{
       return (
         <div className="z-50 bg-gray-400 shadow-md ">
           <div
-            className={`md:flex pr-3 bg-gray-400 md:static transition-all ease-in duration-500 absolute p-2 md:shadow- md:shadow-none shadow-md w-screen md:container m-auto md:justify-between item-center ${
+            className={`md:flex pr-3 bg-gray-400 md:static transition-all ease-in duration-500 z-10 absolute p-2 md:shadow- md:shadow-none shadow-md w-screen md:container m-auto md:justify-between item-center ${
               open ? "top-0 left-0" : "-left-full"
             }`}
           >

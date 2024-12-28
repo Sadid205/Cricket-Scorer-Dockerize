@@ -30,11 +30,11 @@ class ScoreBoardViewSet(APIView):
         try:
             match = Match.objects.get(id=match_id)
             
-            team1_batsmans = Batsman.objects.filter(team=match.team1)
-            team2_batsmans = Batsman.objects.filter(team=match.team2)
+            team1_batsmans = Batsman.objects.filter(team=match.team1,match=match)
+            team2_batsmans = Batsman.objects.filter(team=match.team2,match=match)
 
-            team1_bowlers = Bowler.objects.filter(team=match.team1)
-            team2_bowlers = Bowler.objects.filter(team=match.team2)
+            team1_bowlers = Bowler.objects.filter(team=match.team1,match=match)
+            team2_bowlers = Bowler.objects.filter(team=match.team2,match=match)
 
         
 
@@ -701,7 +701,7 @@ class SelectNewBowlerView(APIView):
             newBowling.matches.add(existing_match)
             newBowling.innings+=1
             newBowling.save()
-            new_bowler = Bowler.objects.create(player=existing_player,team=bowling_team)
+            new_bowler = Bowler.objects.create(player=existing_player,team=bowling_team,match=existing_match)
             if innings=="1st":
                 new_over = OverFI.objects.create(bowler=new_bowler)
                 existing_match.current_bowler=new_bowler
@@ -866,34 +866,34 @@ class StartSecondInningsView(APIView):
             existing_match.save()
 
         if existing_bowler_player!=None:
-            newBowler = Bowler.objects.create(player=existing_bowler_player,team=bowling_team)
+            newBowler = Bowler.objects.create(player=existing_bowler_player,team=bowling_team,match=existing_match)
             newBowling = Bowling.objects.get_or_create(player=existing_bowler_player,team=bowling_team)[0]
             newBowling.matches.add(existing_match)
             newBowling.innings+=1
             newBowling.save()
-            existing_match.current_bowler=newBowler
-            existing_match.save()
+            existing_match.current_bowler = newBowler
             if innings=="1st":
                 newOver = OverFI.objects.create(bowler=newBowler)
                 existing_match.first_innings_over.add(newOver)
             else:
                 newOver = OverSI.objects.create(bowler=newBowler)
                 existing_match.second_innings_over.add(newOver)
+            existing_match.save()
         else:
             newBowlerPlayer = Player.objects.create(name=bowler,team=bowling_team)
-            newBowler = Bowler.objects.create(player=newBowlerPlayer,team=bowling_team)
+            newBowler = Bowler.objects.create(player=newBowlerPlayer,team=bowling_team,match=existing_match)
             newBowling = Bowling.objects.create(player=newBowlerPlayer,team=bowling_team)
             newBowling.matches.add(existing_match)
             newBowling.innings+=1
             newBowling.save()
-            existing_match.current_bowler=newBowler
-            existing_match.save()
+            existing_match.current_bowler = newBowler
             if innings=="1st":
                 newOver = OverFI.objects.create(bowler=newBowler)
                 existing_match.first_innings_over.add(newOver)
             else:
                 newOver = OverSI.objects.create(bowler=newBowler)
                 existing_match.second_innings_over.add(newOver)
+            existing_match.save()
 
             
     def put(self,request,*args,**kwargs):
@@ -903,6 +903,7 @@ class StartSecondInningsView(APIView):
             striker = serializer.validated_data.get("striker")
             non_striker = serializer.validated_data.get("non_striker")
             bowler = serializer.validated_data.get("bowler")
+            existing_match = None
             try:
                 existing_match=Match.objects.get(id=match_id)
             except Match.DoesNotExist:
