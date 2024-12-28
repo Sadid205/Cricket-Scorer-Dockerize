@@ -63,7 +63,7 @@ const ScoreBoard = ()=>{
                             <p className="text-gray-900 text-md">{scoreBoard&&scoreBoard.match.match_status}</p>
                         </div>
                         <div>
-                            <div className="w-full h-12 flex items-center bg-green-600">
+                            <div onClick={()=>setTeamOneExpand((prev)=>!prev)} className="w-full h-12 flex items-center hover:cursor-pointer bg-green-600">
                                 <div className="flex text-white text-md md:text-xl w-11/12 m-auto justify-between items-center gap-2">
                                     <p>{scoreBoard&&scoreBoard.match.team1.team_name.slice(0,17)}</p>
                                     <div className="flex items-center gap-2">
@@ -81,7 +81,7 @@ const ScoreBoard = ()=>{
                                         }
                                         )</span>
                                     </p>
-                                        <button onClick={()=>setTeamOneExpand((prev)=>!prev)}>{teamOneExpand?(<IoIosArrowUp />):(<IoIosArrowDown />)}</button>
+                                        <button>{teamOneExpand?(<IoIosArrowUp />):(<IoIosArrowDown />)}</button>
                                     </div>
                                 </div>
                             </div>
@@ -177,7 +177,7 @@ const ScoreBoard = ()=>{
                             </div>
                         </div>
                         <div>
-                            <div className="w-full border-t-[1px] border-gray-300 h-12 flex items-center bg-green-600">
+                            <div onClick={()=>setTeamTwoExpand((prev)=>!prev)} className="w-full border-t-[1px] hover:cursor-pointer border-gray-300 h-12 flex items-center bg-green-600">
                                 <div className="flex text-white text-md md:text-xl w-11/12 m-auto justify-between items-center gap-2">
                                     <p>{scoreBoard&&scoreBoard.match.team2.team_name.slice(0,17)}</p>
                                     <div className="flex items-center gap-2">
@@ -194,7 +194,7 @@ const ScoreBoard = ()=>{
                                         }
                                         )</span>
                                     </p>
-                                        <button onClick={()=>setTeamTwoExpand((prev)=>!prev)}>{teamTwoExpand?(<IoIosArrowUp />):(<IoIosArrowDown />)}</button>
+                                        <button>{teamTwoExpand?(<IoIosArrowUp />):(<IoIosArrowDown />)}</button>
                                     </div>
                                 </div>
                             </div>
@@ -308,8 +308,8 @@ const ScoreBoard = ()=>{
                                             {over.ball.length>0?(
                                                 over.ball.map((bowl,index)=>{
                                                     return <div className="text-center">
-                                                    <div className={`md:w-12 md:h-12 ${bowl.runs=="OUT"?("bg-red-600"):bowl.runs=="4"?("bg-orange-500"):bowl.runs=="6"?("bg-green-600"):"bg-white"} w-8 h-8 flex justify-center items-center rounded rounded-full border-[2px] border-gray-400`}>
-                                                        <p>{bowl.runs==="OUT"?("Out"):(bowl.runs)}</p>
+                                                    <div className={`md:w-12 md:h-12 ${bowl.runs=="OUT"?("bg-red-600"):bowl.runs=="4"?("bg-orange-500"):bowl.runs=="6"?("bg-green-600"):"bg-white"} w-8 h-8 flex justify-center items-center font-semibold rounded rounded-full border-[2px] border-gray-400`}>
+                                                        <p className={`${bowl.runs=="OUT"?("text-white"):bowl.runs=="4"?("text-white"):bowl.runs=="6"?("text-white"):"text-gray-900"} font-semibold`}>{bowl.runs==="OUT"?("Out"):(bowl.runs)}</p>
                                                     </div>
                                                     <p className="font-semibold text-gray-600">{bowl.ball_types}</p>
                                                 </div>
@@ -338,8 +338,8 @@ const ScoreBoard = ()=>{
                                             {over.ball.length>0?(
                                                 over.ball.map((bowl,index)=>{
                                                     return <div className="text-center">
-                                                    <div className={`md:w-12 md:h-12 ${bowl.runs=="OUT"?("bg-red-600"):bowl.runs=="4"?("bg-orange-500"):bowl.runs=="6"?("bg-green-600"):"bg-white"} w-8 h-8 flex justify-center items-center rounded rounded-full border-[2px] border-gray-400`}>
-                                                        <p>{bowl.runs==="OUT"?("Out"):(bowl.runs)}</p>
+                                                    <div className={`md:w-12 md:h-12 ${bowl.runs=="OUT"?("bg-red-600"):bowl.runs=="4"?("bg-orange-500"):bowl.runs=="6"?("bg-green-600"):"bg-white"} w-8 h-8 flex justify-center items-center font-semibold rounded rounded-full border-[2px] border-gray-400`}>
+                                                        <p className={`${bowl.runs=="OUT"?("text-white"):bowl.runs=="4"?("text-white"):bowl.runs=="6"?("text-white"):"text-gray-900"} font-semibold`}>{bowl.runs==="OUT"?("Out"):(bowl.runs)}</p>
                                                     </div>
                                                     <p className="font-semibold text-gray-600">{bowl.ball_types}</p>
                                                 </div>
