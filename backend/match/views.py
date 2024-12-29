@@ -20,9 +20,10 @@ from rest_framework.permissions import IsAuthenticated
 from batting.models import Batting
 from bowling.models import Bowling
 from rest_framework import  status
-from rest_framework import generics
+from partnerships.models import Partnerships
 from bowler.serializers import BowlerSerializer
 from batsman.serializers import BatsmanSerializer
+from extras.models import Extras
 # Create your views here.
 
 class ScoreBoardViewSet(APIView):
@@ -153,7 +154,8 @@ class SelectOpeningPlayerView(APIView):
         existing_match.current_bowler = new_bowler
         existing_match.striker = new_striker_batsman
         existing_match.non_striker = new_non_striker_batsman
-
+        newExtras = Extras.objects.create(match=existing_match,team=batting_team)
+        newPartnerships = Partnerships.objects.create(match=existing_match,team=batting_team,striker=new_striker_batsman,non_striker=new_non_striker_batsman)
         if innings=="1st":
             new_over = OverFI.objects.create(bowler=new_bowler)
             existing_match.first_innings_over.add(new_over)
@@ -825,6 +827,8 @@ class StartSecondInningsView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     def add_player(self,existing_match,batting_team,bowling_team,striker,non_striker,bowler,innings,existing_striker_player=None,existing_non_striker_player=None,existing_bowler_player=None):
+        newStrikerBatsman = None
+        newNonStrikerBatsman = None
         existing_match.nth_ball=0
         if existing_match.first_innings_nth_ball==6:
             existing_match.first_innings_nth_ball=0
@@ -894,6 +898,8 @@ class StartSecondInningsView(APIView):
                 newOver = OverSI.objects.create(bowler=newBowler)
                 existing_match.second_innings_over.add(newOver)
             existing_match.save()
+        newExtras = Extras.objects.create(match=existing_match,team=batting_team)
+        newPartnerships = Partnerships.objects.create(match=existing_match,team=batting_team,striker=newStrikerBatsman,non_stirker=newNonStrikerBatsman)
 
             
     def put(self,request,*args,**kwargs):

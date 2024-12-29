@@ -12,6 +12,10 @@ const CountRuns = ()=>{
     const [legByesChecked,setLegByesChecked] = useState(false)
     const [wicketChecked,setWicketChecked] = useState(false)
     const [retire,setRetire] = useState(false)
+    const [retiredData,setRetiredData] = useState({
+      retired_batsman:null,
+      new_batsman:null
+    })
     const [swapBatsman,setSwapBatsman] = useState(false)
     const [run,setRun] = useState(-1)
     const [score,setScore] = useState()
@@ -71,11 +75,14 @@ const CountRuns = ()=>{
         "wicket":wicketChecked,
         "how_wicket_fall":howWicketFall,
         "who_helped":whoHelped,
-        "new_batsman":newBatsman
+        "new_batsman":newBatsman,
+        "retired_batsman":retiredData.retired_batsman,
+        "replaced_batsman":retiredData.new_batsman,
+        "swap_batsman":swapBatsman,
         }
     if(socket && socket.readyState === WebSocket.OPEN){
-        socket.send(JSON.stringify(data))
-        console.log("Data sent",data)
+      socket.send(JSON.stringify(data))
+      // console.log("Data sent",data)
     }
    }
    useEffect(()=>{
@@ -106,6 +113,30 @@ const CountRuns = ()=>{
       }
     },[score?.updated_data?.overs_data])
     // console.log(score)
+    const handleRetire = (e)=>{
+     e.preventDefault()
+     if (retiredData.retired_batsman==null){
+      const notify = ()=>{
+        toast("Please select a player!")
+      }
+      notify()
+      return
+     }
+     if (retiredData.new_batsman==null){
+      const notify = ()=>{
+        toast("Please insert a player name!")
+      }
+      notify()
+      return
+     }
+     setIncrease((prevState)=>prevState+1)
+     setRetire(false)
+    }
+    const handleSwap = (e)=>{
+      e.preventDefault()
+      setSwapBatsman(true)
+      setIncrease((prevState)=>prevState+1)
+    }
     const addNewBowler = async(e)=>{
         e.preventDefault()
         if(bowlerName===""){
@@ -290,6 +321,13 @@ const CountRuns = ()=>{
         }
     }
     // console.log(score)
+    const handleRetiredChange = (e)=>{
+      // e.preventDefault()
+      setRetiredData((prevState)=>({
+        ...prevState,
+        [e.target.name]:e.target.value
+      }))
+    }
     return (
     <div style={{height:'100vh'}} className="mt-3">
        <div style={{ boxShadow: "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)"}} className="w-11/12 md:h-48 rounded-2xl md:flex bg-gray-200 justify-around p-4 m-auto bg-white">
@@ -474,10 +512,10 @@ const CountRuns = ()=>{
                         <label htmlFor="wicket" className="font-bold text-gray-500">Wicket</label>
                     </div>
                     <div className="flex items-center m-auto">
-                        <Link onClick={()=>{setRetire(true)}} className="border px-4 py-1 rounded-md bg-green-600 md:text-base text-xs md:font-bold text-white border-2">Retire</Link>
+                        <button onClick={()=>{setRetire(true)}} className="border px-4 py-1 rounded-md bg-green-600 md:text-base text-xs md:font-bold text-white border-2">Retire</button>
                     </div>
                     <div className="flex items-center m-auto">
-                        <Link onClick={()=>{setSwapBatsman(true)}} className="border px-4 py-1 rounded-md bg-green-600 text-xs md:text-base md:font-semibold text-white border-2">Swap Batsman</Link>
+                        <button onClick={(e)=>handleSwap(e)} className="border px-4 py-1 rounded-md bg-green-600 text-xs md:text-base md:font-semibold text-white border-2">Swap Batsman</button>
                     </div>
                 </div>
             </div>
@@ -485,27 +523,27 @@ const CountRuns = ()=>{
         <div className="md:h-52 flex gap-3 w-11/12 m-auto mt-3">
             <div style={{ boxShadow: "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)"}} className="w-2/5 py-11 text-center my-auto rounded rounded-md">
                 <div className="m-3">
-                    <Link className="bg-green-700 text-white font-base md:font-semibold rounded-md px-7 md:px-10 py-1">Undo</Link>
+                    <button className="bg-green-700 text-white font-base md:font-semibold rounded-md px-7 md:px-10 py-1">Undo</button>
                 </div>
                 <div className="m-3">
-                    <Link className="bg-green-700 text-white font-base md:font-semibold rounded-md px-1 md:px-4 py-1">Partnerships</Link>
+                    <button className="bg-green-700 text-white font-base md:font-semibold rounded-md px-1 md:px-4 py-1">Partnerships</button>
                 </div>
                 <div className="m-3">
-                    <Link className="bg-green-700 text-white font-base md:font-semibold rounded-md px-7 md:px-10 py-1">Extras</Link>
+                    <button className="bg-green-700 text-white font-base md:font-semibold rounded-md px-7 md:px-10 py-1">Extras</button>
                 </div>
             </div>
             <div style={{ boxShadow: "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)"}} className="w-3/5 p-2 rounded rounded-md mt-8 md:m-0">
                <div className="flex mt-2">
-               <Link onClick={(e)=>updateScore(e,0)} className="md:w-20 md:h-20 w-10 h-10  font-bold   text-xl md:text-4xl flex items-center justify-center border-green-700 border-4 rounded-full m-auto">0</Link>
-                <Link onClick={(e)=>updateScore(e,1)} className="md:w-20 md:h-20 w-10 h-10  font-bold  text-xl md:text-4xl flex items-center justify-center border-green-700 border-4 rounded-full m-auto">1</Link>
-                <Link onClick={(e)=>updateScore(e,2)} className="md:w-20 md:h-20 w-10 h-10  font-bold  text-xl md:text-4xl flex items-center justify-center border-green-700 border-4 rounded-full m-auto">2</Link>
-                <Link onClick={(e)=>updateScore(e,3)} className="md:w-20 md:h-20 w-10 h-10  font-bold  text-xl md:text-4xl flex items-center justify-center border-green-700 border-4 rounded-full m-auto">3</Link>
+               <button onClick={(e)=>updateScore(e,0)} className="md:w-20 md:h-20 w-10 h-10  font-bold   text-xl md:text-4xl flex items-center justify-center border-green-700 border-4 rounded-full m-auto">0</button>
+                <button onClick={(e)=>updateScore(e,1)} className="md:w-20 md:h-20 w-10 h-10  font-bold  text-xl md:text-4xl flex items-center justify-center border-green-700 border-4 rounded-full m-auto">1</button>
+                <button onClick={(e)=>updateScore(e,2)} className="md:w-20 md:h-20 w-10 h-10  font-bold  text-xl md:text-4xl flex items-center justify-center border-green-700 border-4 rounded-full m-auto">2</button>
+                <button onClick={(e)=>updateScore(e,3)} className="md:w-20 md:h-20 w-10 h-10  font-bold  text-xl md:text-4xl flex items-center justify-center border-green-700 border-4 rounded-full m-auto">3</button>
                </div>
                 <div className="flex mt-5">
-                <Link onClick={(e)=>updateScore(e,4)} className="md:w-20 md:h-20 w-10 h-10  font-bold  text-xl md:text-4xl flex items-center justify-center border-green-700 border-4 rounded-full m-auto">4</Link>
-                <Link onClick={(e)=>updateScore(e,5)} className="md:w-20 md:h-20 w-10 h-10  font-bold  text-xl md:text-4xl flex items-center justify-center border-green-700 border-4 rounded-full m-auto">5</Link>
-                <Link onClick={(e)=>updateScore(e,6)} className="md:w-20 md:h-20 w-10 h-10  font-bold  text-xl md:text-4xl flex items-center justify-center border-green-700 border-4 rounded-full m-auto">6</Link>
-                <Link className="md:w-20 md:h-20 w-10 h-10  font-bold  text-xl md:text-4xl flex items-center justify-center border-green-700 border-4 rounded-full m-auto">...</Link>
+                <button onClick={(e)=>updateScore(e,4)} className="md:w-20 md:h-20 w-10 h-10  font-bold  text-xl md:text-4xl flex items-center justify-center border-green-700 border-4 rounded-full m-auto">4</button>
+                <button onClick={(e)=>updateScore(e,5)} className="md:w-20 md:h-20 w-10 h-10  font-bold  text-xl md:text-4xl flex items-center justify-center border-green-700 border-4 rounded-full m-auto">5</button>
+                <button onClick={(e)=>updateScore(e,6)} className="md:w-20 md:h-20 w-10 h-10  font-bold  text-xl md:text-4xl flex items-center justify-center border-green-700 border-4 rounded-full m-auto">6</button>
+                <button className="md:w-20 md:h-20 w-10 h-10  font-bold  text-xl md:text-4xl flex items-center justify-center border-green-700 border-4 rounded-full m-auto">...</button>
                 </div>
             </div>
         </div>
@@ -676,6 +714,49 @@ const CountRuns = ()=>{
        <div>
           <ToastContainer />
         </div>
+      {retire?(
+         <>
+         <div
+           className="justify-center items-center flex overflow-x-hidden overflow-y-auto fixed inset-0 z-50 outline-none focus:outline-none"
+         >
+           <div className="relative w-auto my-6 mx-auto max-w-3xl">
+             {/*content*/}
+             <div className="border-0 rounded-lg shadow-lg relative flex flex-col w-full bg-white outline-none focus:outline-none">
+               {/*header*/}
+               <div className="flex items-start justify-between p-2 border-b border-solid border-blueGray-200 rounded-t">
+                 <h3 className="text-xl text-green-600 font-semibold">
+                   Select player to retire
+                 </h3>
+               </div>
+               {/*body*/}
+                   <div className="p-2">
+                    <div className="flex items-center mb-4">
+                        <input onChange={(e)=>handleRetiredChange(e)} checked = {retiredData.retired_batsman==="striker"} id="default-radio-1" type="radio" value="striker" name="retired_batsman" className="w-4 h-4 accent-green-600"/>
+                        <label htmlFor="default-radio-1" className="ms-2 text-sm font-medium">{score?(score.updated_data?(score.updated_data.striker_name):("Striker")):("Striker")}</label>
+                    </div>
+                    <div className="flex items-center">
+                        <input onChange={(e)=>handleRetiredChange(e)}
+                        checked = {retiredData.retired_batsman==="non-striker"}
+                        id="default-radio-2" type="radio" value="non-striker" name="retired_batsman" className="w-4 h-4 accent-green-600"/>
+                        <label htmlFor="default-radio-2" className="ms-2 text-sm font-medium">{score?(score.updated_data?(score.updated_data.non_striker_name):("Non-striker")):("Non-striker")}</label>
+                    </div>
+                    <label htmlFor="new_batsman" className="block mt-2 mb-2 text-md font-semibold text-green-600">Replaced by</label>
+                    <input onChange={(e)=>handleRetiredChange(e)} type="text" id="new_batsman" name="new_batsman" className="border-b w-full p-1 outline-none focus:border-green-800 focus:border-b-2" placeholder="Batsman name"/>
+                   </div>
+               {/*footer*/}
+               <div className="flex items-center justify-center p-6 border-t border-solid border-blueGray-200 rounded-b">
+                 <button
+                   className="bg-green-600 w-full rounded rounded-md text-white font-bold text-center px-28 py-3"
+                  onClick={(e)=>handleRetire(e)}>
+                   Done
+                 </button>
+               </div>
+             </div>
+           </div>
+         </div>
+         <div className="opacity-25 fixed inset-0 z-40 bg-black"></div>
+       </>
+      ):null}
     </div>
     )
 }

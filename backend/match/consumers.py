@@ -9,6 +9,8 @@ from match.models import Match
 from fielding.models import Fielding
 from batting.models import Batting
 from bowling.models import Bowling
+from partnerships.models import Partnerships
+from extras.models import Extras
 
 @database_sync_to_async
 def add_nth_ball(existing_match):
@@ -59,6 +61,26 @@ def match_updates(existing_match,innings):
 def only_run(existing_match,run,ball_types,innings):
     batting = Batting.objects.filter(player__id=existing_match.striker.player.id).first()
     bowling = Bowling.objects.filter(player__id=existing_match.current_bowler.player.id).first()
+
+    existing_partnerships = None
+    try:
+        existing_partnerships = Partnerships.objects.get(match=existing_match,team=existing_match.striker.team,striker=existing_match.striker,non_striker=existing_match.non_striker)
+    except Partnerships.DoesNotExist:
+        pass
+    try:
+        existing_partnerships = Partnerships.objects.get(match=existing_match,team=existing_match.striker.team,striker=existing_match.non_striker,non_striker=existing_match.striker)
+    except Partnerships.DoesNotExist:
+        pass
+    
+    if existing_partnerships is not None:
+        existing_partnerships.total_run+=run
+        existing_partnerships.total_ball+=1
+        if existing_match.striker==existing_partnerships.striker:
+            existing_partnerships.striker_runs+=run
+        else:
+            existing_partnerships.non_striker_runs+=run
+        existing_partnerships.save()
+    
     if run==0:
         bowling.dot_balls+=1
         bowling.save()
@@ -111,6 +133,57 @@ def only_run(existing_match,run,ball_types,innings):
 def wide_or_others(existing_match,no_ball,run,ball_types,innings):
     batting = Batting.objects.filter(player__id=existing_match.striker.player.id).first()
     bowling = Bowling.objects.filter(player__id=existing_match.current_bowler.player.id).first()
+    existing_extras = None
+    try:
+        existing_extras = Extras.objects.get(match=existing_match,team=existing_match.striker.team)
+    except Extras.DoesNotExist:
+        pass
+    existing_partnerships = None
+    try:
+        existing_partnerships = Partnerships.objects.get(match=existing_match,team=existing_match.striker.team,striker=existing_match.striker,non_striker=existing_match.non_striker)
+    except Partnerships.DoesNotExist:
+        pass
+    try:
+        existing_partnerships = Partnerships.objects.get(match=existing_match,team=existing_match.striker.team,striker=existing_match.non_striker,non_striker=existing_match.striker)
+    except Partnerships.DoesNotExist:
+        pass
+    if existing_extras is not None:
+        if ball_types=="WD":
+            existing_extras.wide+=1
+        elif ball_types=="NB":
+            existing_extras.no_ball+=1
+        elif ball_types=="BYE":
+            existing_extras.byes+=1
+        elif ball_types=="LB":
+            existing_extras.leg_byes+=1
+        elif ball_types=="NO&LB":
+            existing_extras.no_ball+=1
+            existing_extras.leg_byes+=1
+        elif ball_types=="NO&BYE":
+            existing_extras.no_ball+=1
+            existing_extras.byes+=1
+        else:
+            pass
+        existing_extras.save()
+
+    if existing_partnerships is not None:
+        if ball_types=="WD" or ball_types=="NB":
+            existing_partnerships.total_run+=(run+1)
+            existing_partnerships.extras+=(run+1)
+            if ball_types=="NB":
+                if existing_match.striker==existing_partnerships.striker:
+                    existing_partnerships.striker_runs+=run
+                else:
+                    existing_partnerships.non_striker_runs+=run
+        elif ball_types=="NO&LB" or ball_types=="NO&BYE":
+            existing_partnerships.total_run+=(run+1)
+            existing_partnerships.extras+=(run+1)
+        else:
+            existing_partnerships.total_run+=(run)
+            existing_partnerships.total_ball+=1
+            existing_partnerships.extras+=run
+        existing_partnerships.save()
+
     if no_ball==True:
         existing_match.striker.run+=run
         batting.runs+=run
@@ -146,9 +219,14 @@ def wide_or_others(existing_match,no_ball,run,ball_types,innings):
         bowling.save()
     new_ball = Balls.objects.create(ball_types=ball_types,runs=str(run))
     if innings=="1st":
-        existing_match.first_innings_run+=(1+run)
-        existing_match.current_bowler.run+=(1+run)
-        bowling.runs+=(1+run)
+        if ball_types=="WD" or ball_types=="NB" or ball_types=="NO&BYE" or ball_types=="NO&LB":
+            existing_match.first_innings_run+=(1+run)
+            existing_match.current_bowler.run+=(1+run)
+            bowling.runs+=(1+run)
+        else:
+            existing_match.first_innings_run+=(run)
+            existing_match.current_bowler.run+=(run)
+            bowling.runs+=(run)
         bowling.save()
         existing_match.current_bowler.save()
         over_fi_instance = existing_match.first_innings_over.last()
@@ -156,9 +234,14 @@ def wide_or_others(existing_match,no_ball,run,ball_types,innings):
         existing_match.first_innings_over.add(over_fi_instance)
         existing_match.save()
     else:
-        existing_match.second_innings_run+=(1+run)
-        existing_match.current_bowler.run+=(1+run)
-        bowling.runs+=(1+run)
+        if ball_types=="WD" or ball_types=="NB" or ball_types=="NO&BYE" or ball_types=="NO&LB":
+            existing_match.second_innings_run+=(1+run)
+            existing_match.current_bowler.run+=(1+run)
+            bowling.runs+=(1+run)
+        else:
+            existing_match.second_innings_run+=(run)
+            existing_match.current_bowler.run+=(run)
+            bowling.runs+=(run)
         bowling.save()
         existing_match.current_bowler.save()
         over_si_instance = existing_match.second_innings_over.last()
@@ -175,10 +258,6 @@ def wide_or_others(existing_match,no_ball,run,ball_types,innings):
 def wicket_function(existing_match,existing_striker_or_non_striker,bowling_team,batting_team,new_batsman,how_wicket_fall,ball_types,runs,innings,who_helped=None):
     batting = Batting.objects.filter(player__id=existing_match.striker.player.id).first()
     bowling = Bowling.objects.filter(player__id=existing_match.current_bowler.player.id).first()
-    # try:
-    #     existing_batsman = Batsman.objects.get(id=existing_striker_or_non_striker.id)
-    # except Batsman.DoesNotExist:
-    #     return Response({existing_striker_or_non_striker.id:"This batsman id does not exist!"})
     existing_striker_or_non_striker.out_by = existing_match.current_bowler
     existing_striker_or_non_striker.how_wicket_fall = how_wicket_fall
     existing_striker_or_non_striker.is_out = True
@@ -278,9 +357,11 @@ def wicket_function(existing_match,existing_striker_or_non_striker,bowling_team,
         batting.save()
         if how_wicket_fall=="run_out_non_striker":
             existing_match.non_striker = newBatsman
+            newPartnerships = Partnerships.objects.create(match=existing_match,team=batting_team,striker=existing_match.striker,non_striker=newBatsman)
         else:
             existing_match.striker = newBatsman
             existing_match.save()
+            newPartnerships = Partnerships.objects.create(match=existing_match,team=batting_team,striker=newBatsman,non_striker=existing_match.non_striker)
         existing_match.save()
     else:
         newPlayer = Player.objects.create(name=new_batsman,team=batting_team)
@@ -291,9 +372,11 @@ def wicket_function(existing_match,existing_striker_or_non_striker,bowling_team,
         batting.save()
         if how_wicket_fall=="run_out_non_striker":
             existing_match.non_striker = newBatsman
+            newPartnerships = Partnerships.objects.create(match=existing_match,team=batting_team,striker=existing_match.striker,non_striker=newBatsman)
         else:
             existing_match.striker = newBatsman
             existing_match.save()
+            newPartnerships = Partnerships.objects.create(match=existing_match,team=batting_team,striker=newBatsman,non_striker=existing_match.non_striker)
         existing_match.save()
 
 @database_sync_to_async
@@ -301,6 +384,28 @@ def wide_and_wicket(existing_match,run,how_wicket_fall,existing_batsman,existing
     batting = Batting.objects.filter(player__id=existing_match.striker.player.id).first()
     bowling = Bowling.objects.filter(player__id=existing_match.current_bowler.player.id).first()
     newBall = Balls.objects.create(ball_types=ball_types,runs=runs)
+    existing_extras = None
+    try:
+        existing_extras = Extras.objects.get(match=existing_match,team=existing_match.striker.team)
+    except Extras.DoesNotExist:
+        pass
+
+    try:
+        existing_partnerships = Partnerships.objects.get(match=existing_match,team=existing_match.striker.team,striker=existing_match.striker,non_striker=existing_match.non_striker)
+    except Partnerships.DoesNotExist:
+        pass
+
+    try:
+        existing_partnerships = Partnerships.objects.get(match=existing_match,team=existing_match.striker.team,striker=existing_match.non_striker,non_striker=existing_match.striker)
+    except Partnerships.DoesNotExist:
+        pass
+    if existing_extras is not None:
+        existing_extras.wide+=1
+        existing_extras.save()
+    if existing_partnerships is not None:
+        existing_partnerships.extras+=(run+1)
+        existing_partnerships.total_run+=(run+1)
+    existing_partnerships.save()
     if innings=="1st":   
         existing_match.first_innings_run+=run
         existing_match.first_innings_wicket+=1
@@ -394,8 +499,10 @@ def wide_and_wicket(existing_match,run,how_wicket_fall,existing_batsman,existing
         newBatting.save()
         if how_wicket_fall=="run_out_non_striker":
             existing_match.non_striker = newBatsman
+            newPartnerships = Partnerships.objects.create(match=existing_match,team=batting_team,striker=existing_match.striker,non_striker=newBatsman)
         else:
             existing_match.striker = newBatsman
+            newPartnerships = Partnerships.objects.create(match=existing_match,team=batting_team,striker=newBatsman,non_striker=existing_match.non_striker)
         existing_match.save()
     else:
         newPlayer = Player.objects.create(name=new_batsman,team=batting_team)
@@ -406,8 +513,10 @@ def wide_and_wicket(existing_match,run,how_wicket_fall,existing_batsman,existing
         newBatting.save()
         if how_wicket_fall=="run_out_non_striker":
             existing_match.non_striker = newBatsman
+            newPartnerships = Partnerships.objects.create(match=existing_match,team=batting_team,striker=existing_match.striker,non_striker=newBatsman)
         else:
             existing_match.striker = newBatsman
+            newPartnerships = Partnerships.objects.create(match=existing_match,team=batting_team,striker=newBatsman,non_striker=existing_match.non_striker)
         existing_match.save()
 
 # @database_sync_to_async
@@ -415,38 +524,81 @@ def wide_and_wicket(existing_match,run,how_wicket_fall,existing_batsman,existing
 def save_match(existing_match):
     existing_match.save()
 
-async def update_score(existing_match,toss_winner,host_team,visitor_team,elected,wicket,wide,no_ball,byes,legByes,how_wicket_fall,run,new_batsman,who_helped,innings):
-        # if innings=="1st" and existing_match.total_over==existing_match.first_innings_nth_over:
-        #     existing_match.save()
-        #     return "Second innings started."
-        # if innings=="2nd" and existing_match.total_over==existing_match.second_innings_nth_over:
-        #     existing_match.save()
-        #     return "Match finished!"
+@database_sync_to_async
+def retire_batsman(existing_match,retired_batsman,new_batsman):
+    batting_team = existing_match.striker.team
+    if retired_batsman=="striker":
+        existing_match.striker.how_wicket_fall="retired"
+        existing_match.striker.is_out = True
+        existing_match.striker.save()
+    else:
+        existing_match.non_striker.how_wicket_fall="retired"
+        existing_match.non_striker.is_out = True
+        existing_match.non_striker.save()
+
+    try:
+        existing_player = Player.objects.get(name=new_batsman,team=batting_team)
+    except Player.DoesNotExist:
+        existing_player = None
+    if existing_player!=None:
+        newBatsman = Batsman.objects.create(match=existing_match,player=existing_player,team=batting_team)
+        newBatting = Batting.objects.get_or_create(player=existing_player,team=batting_team)[0]
+        newBatting.matches.add(existing_match)
+        newBatting.innings+=1
+        newBatting.save()
+        if retired_batsman=="striker":
+            existing_match.striker = newBatsman
+            newPartnerships = Partnerships.objects.create(match=existing_match,team=batting_team,striker=newBatsman,non_striker=existing_match.non_striker)
+        else:
+            existing_match.non_striker = newBatsman
+            newPartnerships = Partnerships.objects.create(match=existing_match,team=batting_team,striker=existing_match.striker,non_striker=newBatsman)
+        existing_match.save()
+    else:
+        newPlayer = Player.objects.create(name=new_batsman,team=batting_team)
+        newBatsman = Batsman.objects.create(match=existing_match,player=newPlayer,team=batting_team)
+        newBatting = Batting.objects.get_or_create(player=newPlayer,team=batting_team)[0]
+        newBatting.matches.add(existing_match)
+        newBatting.innings+=1
+        newBatting.save()
+        if retired_batsman=="striker":
+            existing_match.striker = newBatsman
+            newPartnerships = Partnerships.objects.create(match=existing_match,team=batting_team,striker=newBatsman,non_striker=existing_match.non_striker)
+        else:
+            existing_match.non_striker = newBatsman
+            newPartnerships = Partnerships.objects.create(match=existing_match,team=batting_team,striker=existing_match.striker,non_striker=newBatsman)
+        existing_match.save()
+
+@database_sync_to_async
+def swap(existing_match):
+    temp_striker = existing_match.striker
+    existing_match.striker = existing_match.non_striker
+    existing_match.non_striker = temp_striker
+    existing_match.save()
+
+async def update_score(existing_match,swap_batsman,retired_batsman,replaced_batsman,toss_winner,host_team,visitor_team,elected,wicket,wide,no_ball,byes,legByes,how_wicket_fall,run,new_batsman,who_helped,innings):
         await match_updates(existing_match=existing_match,innings=innings)
+        if retired_batsman is not None:
+            await retire_batsman(existing_match,retired_batsman=retired_batsman,new_batsman=replaced_batsman)
+            
+        if swap_batsman==True:
+            await swap(existing_match)
+            
         if wicket==True and (wide==True or no_ball==True or byes==True or legByes==True):
-            # existing_striker = existing_match.striker
-            # existing_non_striker = existing_match.non_striker
             existing_striker = await get_existing_striker(existing_match=existing_match)
             existing_non_striker = await get_existing_non_striker(existing_match=existing_match)
             try:
                 if how_wicket_fall=="run_out_non_striker":
-                    # existing_batsman = Batsman.objects.get(id=existing_non_striker.id)
                     existing_batsman = await get_existing_batsman(existing_non_striker)
                 else:
                     existing_batsman = await get_existing_batsman(existing_striker)
-                    # existing_batsman = Batsman.objects.get(id=existing_striker.id)
             except Batsman.DoesNotExist:
                 if how_wicket_fall=="run_out_non_striker":
-                    # return f"{existing_non_striker.id}:This batsman id does not exist!"
                     return f"{await get_batsman_id(existing_non_striker)}:This batsman id does not exist!"
                 else:
-                    # return f"{existing_striker.id}:This batsman id does not exist!"
                     return f"{await get_batsman_id(existing_striker)}:This batsman id does not exist!"
             if innings=="1st":
-                # existing_over_instance = existing_match.first_innings_over.last()
                 existing_over_instance = await get_first_innings_over_instance(existing_match)
             else:
-                # existing_over_instance = existing_match.second_innings_over.last()
                 existing_over_instance = await get_second_innings_over_instance(existing_match)
 
             if toss_winner == host_team and elected=="Bat" or toss_winner==visitor_team and elected=="Bowl":
@@ -787,6 +939,9 @@ class ScoreUpdateReceiveConsumer(AsyncWebsocketConsumer):
         how_wicket_fall = data.get("how_wicket_fall")
         who_helped = data.get("who_helped")
         new_batsman = data.get("new_batsman")
+        retired_batsman = data.get("retired_batsman")
+        replaced_batsman = data.get("replaced_batsman")
+        swap_batsman = data.get("swap_batsman")
         match_data = await get_match_data(match_id=self.match_id)
         innings = match_data.get("innings")
         existing_match = match_data.get("existing_match")
@@ -795,7 +950,7 @@ class ScoreUpdateReceiveConsumer(AsyncWebsocketConsumer):
         visitor_team = match_data.get("visitor_team")
         elected = match_data.get("elected")
         if match_data is not None:
-            response_data = await update_score(existing_match,toss_winner,host_team,visitor_team,elected,wicket,wide,no_ball,byes,legByes,how_wicket_fall,run,new_batsman,who_helped,innings)
+            response_data = await update_score(existing_match,swap_batsman,retired_batsman,replaced_batsman,toss_winner,host_team,visitor_team,elected,wicket,wide,no_ball,byes,legByes,how_wicket_fall,run,new_batsman,who_helped,innings)
             updated_data = await get_updated_match_data(match_id=self.match_id)
         await self.channel_layer.group_send(
             self.room_group_name,
