@@ -11,6 +11,8 @@ from batting.models import Batting
 from bowling.models import Bowling
 from partnerships.models import Partnerships
 from extras.models import Extras
+from partnerships.serializers import PartnershipsSerializer
+from extras.serializers import ExtrasSerializer
 
 @database_sync_to_async
 def add_nth_ball(existing_match):
@@ -389,7 +391,7 @@ def wide_and_wicket(existing_match,run,how_wicket_fall,existing_batsman,existing
         existing_extras = Extras.objects.get(match=existing_match,team=existing_match.striker.team)
     except Extras.DoesNotExist:
         pass
-
+    existing_partnerships = None
     try:
         existing_partnerships = Partnerships.objects.get(match=existing_match,team=existing_match.striker.team,striker=existing_match.striker,non_striker=existing_match.non_striker)
     except Partnerships.DoesNotExist:
@@ -405,7 +407,7 @@ def wide_and_wicket(existing_match,run,how_wicket_fall,existing_batsman,existing
     if existing_partnerships is not None:
         existing_partnerships.extras+=(run+1)
         existing_partnerships.total_run+=(run+1)
-    existing_partnerships.save()
+        existing_partnerships.save()
     if innings=="1st":   
         existing_match.first_innings_run+=run
         existing_match.first_innings_wicket+=1
@@ -575,11 +577,41 @@ def swap(existing_match):
     existing_match.non_striker = temp_striker
     existing_match.save()
 
-async def update_score(existing_match,swap_batsman,retired_batsman,replaced_batsman,toss_winner,host_team,visitor_team,elected,wicket,wide,no_ball,byes,legByes,how_wicket_fall,run,new_batsman,who_helped,innings):
+@database_sync_to_async
+def add_panalty_run(existing_match,scored_runs,panalty_runs,innings):
+    if innings=="1st":
+        existing_match.first_innings_run+=(scored_runs+panalty_runs)
+    else:
+        existing_match.second_innings_run+=(scored_runs+panalty_runs)
+        existing_extras = None
+    try:
+        existing_extras = Extras.objects.get(match=existing_match,team=existing_match.striker.team)
+    except Extras.DoesNotExist:
+        pass
+    existing_partnerships = None
+    try:
+        existing_partnerships = Partnerships.objects.get(match=existing_match,team=existing_match.striker.team,striker=existing_match.striker,non_striker=existing_match.non_striker)
+    except Partnerships.DoesNotExist:
+        pass
+
+    try:
+        existing_partnerships = Partnerships.objects.get(match=existing_match,team=existing_match.striker.team,striker=existing_match.non_striker,non_striker=existing_match.striker)
+    except Partnerships.DoesNotExist:
+        pass
+    if existing_extras is not None:
+        existing_extras.panalty+=panalty_runs
+        existing_extras.save()
+    if existing_partnerships is not None:
+        existing_partnerships.extras+=panalty_runs
+        existing_partnerships.total_run+=(scored_runs+panalty_runs)
+        existing_partnerships.save()
+
+async def update_score(existing_match,panalty,scored_runs,panalty_runs,swap_batsman,retired_batsman,replaced_batsman,toss_winner,host_team,visitor_team,elected,wicket,wide,no_ball,byes,legByes,how_wicket_fall,run,new_batsman,who_helped,innings):
         await match_updates(existing_match=existing_match,innings=innings)
         if retired_batsman is not None:
             await retire_batsman(existing_match,retired_batsman=retired_batsman,new_batsman=replaced_batsman)
-            
+        if panalty==True:
+            await add_panalty_run(existing_match,scored_runs,panalty_runs,innings)
         if swap_batsman==True:
             await swap(existing_match)
             
@@ -858,7 +890,11 @@ def get_updated_match_data(match_id):
             else:
                 updated_score["batting_team_name"]=host_team.team_name
 
-        updated_score.update( 
+        existing_extras = Extras.objects.get(match=existing_match,team=existing_match.striker.team)
+        existing_partnerships = Partnerships.objects.filter(match=existing_match,team=existing_match.striker.team) 
+        extras_data = ExtrasSerializer(existing_extras).data
+        partnerships_data = PartnershipsSerializer(existing_partnerships,many=True).data
+        updated_score.update(
             {   "innings":innings,
                 "nth_ball":existing_match.nth_ball,
                 "status":existing_match.match_status,
@@ -875,7 +911,9 @@ def get_updated_match_data(match_id):
                 "non_striker_six":existing_match.non_striker.six,
                 "non_striker_strike_rate":existing_match.non_striker.strike_rate,
                 "total_over":existing_match.total_over,
-                "is_match_finished":existing_match.is_match_finished
+                "is_match_finished":existing_match.is_match_finished,
+                "extras":extras_data,
+                "partnerships":partnerships_data,
                 })
         return updated_score
     return None
@@ -942,6 +980,9 @@ class ScoreUpdateReceiveConsumer(AsyncWebsocketConsumer):
         retired_batsman = data.get("retired_batsman")
         replaced_batsman = data.get("replaced_batsman")
         swap_batsman = data.get("swap_batsman")
+        panalty = data.get("panalty")
+        scored_runs = int(data.get("scored_runs")) if data.get("scored_runs") is not None else None 
+        panalty_runs = int(data.get("panalty_runs")) if data.get("panalty_runs") is not None else None
         match_data = await get_match_data(match_id=self.match_id)
         innings = match_data.get("innings")
         existing_match = match_data.get("existing_match")
@@ -950,7 +991,7 @@ class ScoreUpdateReceiveConsumer(AsyncWebsocketConsumer):
         visitor_team = match_data.get("visitor_team")
         elected = match_data.get("elected")
         if match_data is not None:
-            response_data = await update_score(existing_match,swap_batsman,retired_batsman,replaced_batsman,toss_winner,host_team,visitor_team,elected,wicket,wide,no_ball,byes,legByes,how_wicket_fall,run,new_batsman,who_helped,innings)
+            response_data = await update_score(existing_match,panalty,scored_runs,panalty_runs,swap_batsman,retired_batsman,replaced_batsman,toss_winner,host_team,visitor_team,elected,wicket,wide,no_ball,byes,legByes,how_wicket_fall,run,new_batsman,who_helped,innings)
             updated_data = await get_updated_match_data(match_id=self.match_id)
         await self.channel_layer.group_send(
             self.room_group_name,

@@ -899,7 +899,7 @@ class StartSecondInningsView(APIView):
                 existing_match.second_innings_over.add(newOver)
             existing_match.save()
         newExtras = Extras.objects.create(match=existing_match,team=batting_team)
-        newPartnerships = Partnerships.objects.create(match=existing_match,team=batting_team,striker=newStrikerBatsman,non_stirker=newNonStrikerBatsman)
+        newPartnerships = Partnerships.objects.create(match=existing_match,team=batting_team,striker=newStrikerBatsman,non_striker=newNonStrikerBatsman)
 
             
     def put(self,request,*args,**kwargs):

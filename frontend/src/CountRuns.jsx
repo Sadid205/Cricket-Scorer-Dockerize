@@ -12,6 +12,11 @@ const CountRuns = ()=>{
     const [legByesChecked,setLegByesChecked] = useState(false)
     const [wicketChecked,setWicketChecked] = useState(false)
     const [retire,setRetire] = useState(false)
+    const [panalty,setPanalty] = useState(false)
+    const [scoredRuns,setScoredRuns] = useState(null)
+    const [panaltyRuns,setPanaltyRuns] = useState(null)
+    const [extras,setExtras] = useState(false)
+    const [partnerships,setPartnerships] = useState(false)
     const [retiredData,setRetiredData] = useState({
       retired_batsman:null,
       new_batsman:null
@@ -40,7 +45,7 @@ const CountRuns = ()=>{
     socketInstance.onopen = function(event){
       const match_data = JSON.parse(event.data)
       setScore(match_data)
-      console.log("hello")
+      // console.log(match_data)
     }
     socketInstance.onmessage = function(event){
         const match_data = JSON.parse(event.data)
@@ -51,6 +56,7 @@ const CountRuns = ()=>{
         setByesChecked(false)
         setLegByesChecked(false)
         setWicketChecked(false)
+        setPanalty(false)
     };
     socketInstance.onerror = function(error){
         console.log('websocket eror',error)
@@ -59,7 +65,6 @@ const CountRuns = ()=>{
         console.log('websocket connection closed!')
     }
     setSocket(socketInstance)
-
     return ()=>{
         socketInstance.close();
     }
@@ -79,12 +84,16 @@ const CountRuns = ()=>{
         "retired_batsman":retiredData.retired_batsman,
         "replaced_batsman":retiredData.new_batsman,
         "swap_batsman":swapBatsman,
+        "panalty":panalty,
+        "scored_runs":scoredRuns,
+        "panalty_runs":panaltyRuns,
         }
     if(socket && socket.readyState === WebSocket.OPEN){
+      console.log("Data sent",data)
       socket.send(JSON.stringify(data))
-      // console.log("Data sent",data)
     }
    }
+   console.log(score)
    useEffect(()=>{
     sendData()
    },[increase])
@@ -135,6 +144,24 @@ const CountRuns = ()=>{
     const handleSwap = (e)=>{
       e.preventDefault()
       setSwapBatsman(true)
+      setIncrease((prevState)=>prevState+1)
+    }
+    const handlePanalty=(e)=>{
+      e.preventDefault()
+      if(scoredRuns==null){
+        const notify = ()=>{
+          toast("Scored runs can not be empty!")
+        }
+        notify()
+        return
+      }
+      if(panaltyRuns==null){
+        const notify = ()=>{
+          toast("Panalty runs can not be empty!")
+        }
+        notify()
+        return
+      }
       setIncrease((prevState)=>prevState+1)
     }
     const addNewBowler = async(e)=>{
@@ -328,8 +355,14 @@ const CountRuns = ()=>{
         [e.target.name]:e.target.value
       }))
     }
+    const getPercentageWidth = (total_runs,batsman_runs)=>{
+      if((total_runs=="0") || parseInt(total_runs)===0) return 0
+      const percentage = ((parseInt(batsman_runs))/parseInt(total_runs))*100;
+      // print(percentage)
+      return percentage;
+    }
     return (
-    <div style={{height:'100vh'}} className="mt-3">
+    <div className="relative h-full overflow-hidden">
        <div style={{ boxShadow: "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)"}} className="w-11/12 md:h-48 rounded-2xl md:flex bg-gray-200 justify-around p-4 m-auto bg-white">
             <div className="h-full text-center w-72 m-auto">
                 <p className="font-bold">{score?(score.updated_data?(score.updated_data.batting_team_name):("")):("Batting Team")} Team,{score?(score.updated_data?(score.updated_data.innings):("")):("")} innings</p>
@@ -526,10 +559,10 @@ const CountRuns = ()=>{
                     <button className="bg-green-700 text-white font-base md:font-semibold rounded-md px-7 md:px-10 py-1">Undo</button>
                 </div>
                 <div className="m-3">
-                    <button className="bg-green-700 text-white font-base md:font-semibold rounded-md px-1 md:px-4 py-1">Partnerships</button>
+                    <button onClick={(e)=>setPartnerships((prevState)=>!prevState)} className="bg-green-700 text-white font-base md:font-semibold rounded-md px-1 md:px-4 py-1">Partnerships</button>
                 </div>
                 <div className="m-3">
-                    <button className="bg-green-700 text-white font-base md:font-semibold rounded-md px-7 md:px-10 py-1">Extras</button>
+                    <button onClick={(e)=>setExtras((prevState)=>!prevState)} className="bg-green-700 text-white font-base md:font-semibold rounded-md px-7 md:px-10 py-1">Extras</button>
                 </div>
             </div>
             <div style={{ boxShadow: "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)"}} className="w-3/5 p-2 rounded rounded-md mt-8 md:m-0">
@@ -543,7 +576,7 @@ const CountRuns = ()=>{
                 <button onClick={(e)=>updateScore(e,4)} className="md:w-20 md:h-20 w-10 h-10  font-bold  text-xl md:text-4xl flex items-center justify-center border-green-700 border-4 rounded-full m-auto">4</button>
                 <button onClick={(e)=>updateScore(e,5)} className="md:w-20 md:h-20 w-10 h-10  font-bold  text-xl md:text-4xl flex items-center justify-center border-green-700 border-4 rounded-full m-auto">5</button>
                 <button onClick={(e)=>updateScore(e,6)} className="md:w-20 md:h-20 w-10 h-10  font-bold  text-xl md:text-4xl flex items-center justify-center border-green-700 border-4 rounded-full m-auto">6</button>
-                <button className="md:w-20 md:h-20 w-10 h-10  font-bold  text-xl md:text-4xl flex items-center justify-center border-green-700 border-4 rounded-full m-auto">...</button>
+                <button onClick={(e)=>setPanalty(true)} className="md:w-20 md:h-20 w-10 h-10  font-bold  text-xl md:text-4xl flex items-center justify-center border-green-700 border-4 rounded-full m-auto">...</button>
                 </div>
             </div>
         </div>
@@ -723,10 +756,11 @@ const CountRuns = ()=>{
              {/*content*/}
              <div className="border-0 rounded-lg shadow-lg relative flex flex-col w-full bg-white outline-none focus:outline-none">
                {/*header*/}
-               <div className="flex items-start justify-between p-2 border-b border-solid border-blueGray-200 rounded-t">
+               <div className="flex items-center justify-between p-2">
                  <h3 className="text-xl text-green-600 font-semibold">
                    Select player to retire
                  </h3>
+                 <p onClick={(e)=>setRetire(false)} className="text-xl p-4 hover:cursor-pointer"><RxCross1/></p>
                </div>
                {/*body*/}
                    <div className="p-2">
@@ -757,9 +791,88 @@ const CountRuns = ()=>{
          <div className="opacity-25 fixed inset-0 z-40 bg-black"></div>
        </>
       ):null}
+      {panalty?(
+         <>
+         <div
+           className="justify-center p-2 items-center flex overflow-x-hidden overflow-y-auto fixed inset-0 z-50 outline-none focus:outline-none"
+         >
+           <div className="relative w-auto my-6 mx-auto max-w-3xl">
+             {/*content*/}
+             <div className="border-0 shadow-lg relative flex flex-col w-full bg-white outline-none focus:outline-none">
+               {/*header*/}
+               <div className="flex items-center justify-start px-4 py-2">
+                 <h3 className="text-xl font-semibold">
+                   End of the first inning
+                 </h3>
+               </div>
+               {/*body*/}
+                   <div className="p-2">
+                    <label htmlFor="scored_runs" className="block mt-2 mb-2 text-md text-green-600">Scored runs (including overthrows)?</label>
+                    <input onChange={(e)=>setScoredRuns(e.target.value)} placeholder="0" type="number" id="scored_runs" name="scored_runs" className="border-b w-full p-1 outline-none focus:border-green-800 focus:border-b-2"/>
+                   </div>
+                   <div className="p-2">
+                    <label htmlFor="panalty_runs" className="block mt-2 mb-2 text-md text-green-600">Panalty runs?</label>
+                    <input onChange={(e)=>setPanaltyRuns(e.target.value)} placeholder="0" type="number" id="panalty_runs" name="panalty_runs" className="border-b w-full p-1 outline-none focus:border-green-800 focus:border-b-2"/>
+                   </div>
+               {/*footer*/}
+               <div className="flex items-center justify-end p-6 border-t border-solid border-blueGray-200 rounded-b">
+                 <div className="flex gap-4 text-green-600">
+                  <p onClick={(e)=>setPanalty(false)}  className="hover:cursor-pointer">CANCEL</p>
+                  <p onClick={(e)=>handlePanalty(e)} className="hover:cursor-pointer">OK</p>
+                 </div>
+               </div>
+             </div>
+           </div>
+         </div>
+         <div className="opacity-25 fixed inset-0 z-40 bg-black"></div>
+       </>
+      ):null}
+      <div style={{boxShadow:"0px -5px 20px 2px #888888",bottom:extras?"0":"-100px",transition:"bottom 0.3s ease-in-out"}} className={`h-10 z-40 items-center font-semibold flex justify-start p-3 rounded-t-xl border-t-[1px] border-gray-500  w-full bg-white absolute`}>
+            <p className="pt-1">Extras: {score?.updated_data?(score?.updated_data.extras.byes):("0")} B, {score?.updated_data?(score?.updated_data.extras.leg_byes):("0")} LB, {score?.updated_data?(score?.updated_data.extras.wide):("0")} WD, {score?.updated_data?(score?.updated_data.extras.no_ball):("0")} NB, {score?.updated_data?(score?.updated_data.extras.panalty):("0")} P</p>
+      </div>
+      <div style={{boxShadow:"0px -5px 20px 2px #888888",bottom:partnerships?"0":"-100%",transition:"bottom 0.3s ease-in-out"}} className="w-full max-h-full overflow-y-auto z-50 rounded-t-xl bg-white border-t-[1px] border-gray-500 absolute">
+        <div className="w-full p-2 flex justify-center "><button className="text-xl font-semibold" onClick={(e)=>setPartnerships(false)}><RxCross1/></button></div>
+            {
+              score?.updated_data?.partnerships.length>0?(
+                score.updated_data.partnerships.map((partnership,index)=>{
+                  return<div key={index} className="flex h-24 border-b-[1px] border-gray-400 w-full p-2 justify-evenly items-center">
+                  <div className="w-full">
+                    <div className="flex justify-start items-center">
+                      <p className="font-semibold">{partnership.striker.player.name}</p>
+                    </div>
+                    <div className="flex py-2 justify-end items-center h-8 bg-gray-400">
+                        <div style={{width:`${getPercentageWidth(partnership.total_run,partnership.striker_runs)}%`}} className={`flex items-center justify-start bg-green-600`}>
+                            <p className="text-white">{partnership.striker_runs}</p>
+                        </div>
+                    </div>
+                    <div className="flex justify-start items-center">
+                      <p className="font-semibold">Extras: {partnership.extras}</p>
+                    </div>
+                  </div>
+                  <div className="flex w-1/6 h-8 flex-col text-center">
+                    <p className="text-xl text-sm font-semibold">{partnership.total_run}</p>
+                    <p className="text-xs">({partnership.total_ball})</p>
+                  </div>
+                  <div className="w-full">
+                    <div className="flex justify-end items-center">
+                      <p className="font-semibold">{partnership.non_striker.player.name}</p>
+                    </div>
+                    <div className="flex py-2 justify-start items-center h-8 bg-gray-400">
+                        <div style={{width:`${getPercentageWidth(partnership.total_run,partnership.non_striker_runs)}%`}} className="flex items-center justify-end bg-green-600">
+                            <p className="text-white">{partnership.non_striker_runs}</p>
+                        </div>
+                    </div>
+                    <div className="flex invisible justify-start items-center">
+                      <p className="font-semibold">Extras: 1</p>
+                    </div>
+                  </div>
+                </div>
+                })
+              ):null
+            }
+      </div>
     </div>
     )
 }
 
 export default CountRuns;
-
