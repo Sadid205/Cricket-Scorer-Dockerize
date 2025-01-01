@@ -13,6 +13,7 @@ from partnerships.models import Partnerships
 from extras.models import Extras
 from partnerships.serializers import PartnershipsSerializer
 from extras.serializers import ExtrasSerializer
+from fall_of_wickets.models import FallOfWickets
 
 @database_sync_to_async
 def add_nth_ball(existing_match):
@@ -102,11 +103,15 @@ def only_run(existing_match,run,ball_types,innings):
         over_fi_instance.ball.add(new_ball)
         existing_match.first_innings_over.add(over_fi_instance)
         existing_match.first_innings_run+=run
+        over_fi_instance.scored_runs+=run
+        over_fi_instance.save()
     else:
         over_si_instance = existing_match.second_innings_over.last()
         over_si_instance.ball.add(new_ball)
         existing_match.second_innings_over.add(over_si_instance)
         existing_match.second_innings_run+=run
+        over_si_instance.scored_runs+=run
+        over_si_instance.save()
     existing_match.striker.ball+=1
     existing_match.nth_ball+=1
     if innings=="1st":
@@ -221,30 +226,38 @@ def wide_or_others(existing_match,no_ball,run,ball_types,innings):
         bowling.save()
     new_ball = Balls.objects.create(ball_types=ball_types,runs=str(run))
     if innings=="1st":
+        over_fi_instance = existing_match.first_innings_over.last()
         if ball_types=="WD" or ball_types=="NB" or ball_types=="NO&BYE" or ball_types=="NO&LB":
             existing_match.first_innings_run+=(1+run)
             existing_match.current_bowler.run+=(1+run)
             bowling.runs+=(1+run)
+            over_fi_instance.scored_runs+=(1+run)
         else:
             existing_match.first_innings_run+=(run)
             existing_match.current_bowler.run+=(run)
             bowling.runs+=(run)
+            over_fi_instance.scored_runs+=(1+run)
         bowling.save()
+        over_fi_instance.save()
         existing_match.current_bowler.save()
         over_fi_instance = existing_match.first_innings_over.last()
         over_fi_instance.ball.add(new_ball)
         existing_match.first_innings_over.add(over_fi_instance)
         existing_match.save()
     else:
+        over_si_instance = existing_match.second_innings_over.last()
         if ball_types=="WD" or ball_types=="NB" or ball_types=="NO&BYE" or ball_types=="NO&LB":
             existing_match.second_innings_run+=(1+run)
             existing_match.current_bowler.run+=(1+run)
             bowling.runs+=(1+run)
+            over_si_instance.scored_runs+=(1+run)
         else:
             existing_match.second_innings_run+=(run)
             existing_match.current_bowler.run+=(run)
             bowling.runs+=(run)
+            over_si_instance.scored_runs+=(1+run)
         bowling.save()
+        over_si_instance.save()
         existing_match.current_bowler.save()
         over_si_instance = existing_match.second_innings_over.last()
         over_si_instance.ball.add(new_ball)
@@ -265,13 +278,8 @@ def wicket_function(existing_match,existing_striker_or_non_striker,bowling_team,
     existing_striker_or_non_striker.is_out = True
     existing_striker_or_non_striker.save()
 
-    if innings=="1st":
-        existing_over_instance = existing_match.first_innings_over.last()
-        existing_match.first_innings_wicket+=1
-    else:
-        existing_over_instance = existing_match.second_innings_over.last()
-        existing_match.second_innings_wicket+=1
-
+    new_fall_of_wicket = FallOfWickets.objects.create(match=existing_match,team=batting_team,batsman=existing_striker_or_non_striker)
+    
     newBall = Balls.objects.create(ball_types=ball_types,runs=runs)
     existing_match.current_bowler.nth_ball+=1
     existing_match.current_bowler.wicket+=1
@@ -281,10 +289,23 @@ def wicket_function(existing_match,existing_striker_or_non_striker,bowling_team,
     batting.number_of_outs+=1
     batting.save()
     existing_match.current_bowler.save()
-    existing_over_instance.ball.add(newBall)
     existing_match.save()
     fielding = None
-      
+    
+    if innings=="1st":
+        existing_over_instance = existing_match.first_innings_over.last()
+        existing_match.first_innings_wicket+=1
+        new_fall_of_wicket.nth_over = existing_match.first_innings_nth_over
+        new_fall_of_wicket.nth_ball= existing_match.first_innings_nth_ball
+        new_fall_of_wicket.save()
+    else:
+        existing_over_instance = existing_match.second_innings_over.last()
+        existing_match.second_innings_wicket+=1
+        new_fall_of_wicket.nth_over = existing_match.second_innings_nth_over
+        new_fall_of_wicket.nth_ball = existing_match.second_innings_nth_ball
+        new_fall_of_wicket.save()
+    existing_over_instance.ball.add(newBall)
+
     if who_helped!=None:
         try:
             existing_catch_player = Player.objects.get(name=who_helped,team=bowling_team)
@@ -408,12 +429,25 @@ def wide_and_wicket(existing_match,run,how_wicket_fall,existing_batsman,existing
         existing_partnerships.extras+=(run+1)
         existing_partnerships.total_run+=(run+1)
         existing_partnerships.save()
-    if innings=="1st":   
-        existing_match.first_innings_run+=run
+    new_fall_of_wicket = FallOfWickets.objects.create(match=existing_match,team=batting_team,batting=existing_batsman)
+    if innings=="1st":
+        over_fi_instance = existing_match.first_innings_over.last()
+        over_fi_instance.scored_runs+=(run+1)
+        over_fi_instance.save()
+        existing_match.first_innings_run+=(run+1)
         existing_match.first_innings_wicket+=1
+        new_fall_of_wicket.nth_over = existing_match.first_innings_nth_over
+        new_fall_of_wicket.nth_ball = existing_match.first_innings_nth_ball
+        new_fall_of_wicket.save()
     else:
-        existing_match.second_innings_run+=run
+        over_si_instance = existing_match.second_innings_over.last()
+        over_si_instance.scored_runs+=(run+1)
+        over_si_instance.save()
+        existing_match.second_innings_run+=(run+1)
         existing_match.second_innings_wicket+=1
+        new_fall_of_wicket.nth_over = existing_match.second_innings_nth_over
+        new_fall_of_wicket.nth_ball = existing_match.second_innings_nth_ball
+        new_fall_of_wicket.save()
     existing_batsman.out_by = existing_match.current_bowler
     existing_batsman.how_wicket_fall = how_wicket_fall
     existing_batsman.is_out = True

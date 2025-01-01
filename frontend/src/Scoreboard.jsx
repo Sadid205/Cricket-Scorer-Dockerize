@@ -90,12 +90,12 @@ const ScoreBoard = ()=>{
                                         <table className="text-xs w-full table-auto">
                                             <thead className="bg-green-900/40">
                                             <tr className="border border-gray-400">
-                                                    <th scope="col" className="py-3 text-left">Batsman</th>
-                                                    <th scope="col" className="px-4 py-3">R</th>
-                                                    <th scope="col" className="px-4 py-3">B</th>
-                                                    <th scope="col" className="px-4 py-3">4s</th>
-                                                    <th scope="col" className="px-4 py-3">6s</th>
-                                                    <th scope="col" className="px-4 py-3">SR</th>
+                                                <th scope="col" className="py-3 text-left">Batsman</th>
+                                                <th scope="col" className="px-4 py-3">R</th>
+                                                <th scope="col" className="px-4 py-3">B</th>
+                                                <th scope="col" className="px-4 py-3">4s</th>
+                                                <th scope="col" className="px-4 py-3">6s</th>
+                                                <th scope="col" className="px-4 py-3">SR</th>
                                             </tr>
                                             </thead>
                                             <tbody>
@@ -156,21 +156,19 @@ const ScoreBoard = ()=>{
                                             </tr>
                                             </thead>
                                             <tbody>
-                                                <tr className="border-t-[1px] border-gray-400">
-                                                    <td className="py-3 text-left">Sujon1</td>
-                                                    <td className="px-4 py-3 text-center">22/1</td>
-                                                    <td className="px-4 py-3 text-center">4.2</td>
-                                                </tr>
-                                                <tr className="border-t-[1px] border-gray-400">
-                                                    <td className="py-3 text-left">Sujon1</td>
-                                                    <td className="px-4 py-3 text-center">22/1</td>
-                                                    <td className="px-4 py-3 text-center">4.2</td>
-                                                </tr>
-                                                <tr className="border-t-[1px] border-gray-400">
-                                                    <td className="py-3 text-left">Sujon1</td>
-                                                    <td className="px-4 py-3 text-center">22/1</td>
-                                                    <td className="px-4 py-3 text-center">4.2</td>
-                                                </tr>
+                                                {
+                                                    scoreBoard?(
+                                                        scoreBoard.team1_fall_of_wickets.length>0?(
+                                                            scoreBoard.team1_fall_of_wickets.map((wicket,index)=>{
+                                                                return <tr key={index} className="border-t-[1px] border-gray-400">
+                                                                <td className="py-3 text-left">{wicket.batsman.player.name}</td>
+                                                                <td className="px-4 py-3 text-center">{wicket.score}/{wicket.wicket}</td>
+                                                                <td className="px-4 py-3 text-center">{wicket.nth_over}.{wicket.nth_ball}</td>
+                                                            </tr>
+                                                            })
+                                                        ):null
+                                                    ):null
+                                                }
                                             </tbody>
                                         </table>
                                 </div>
@@ -269,21 +267,19 @@ const ScoreBoard = ()=>{
                                             </tr>
                                             </thead>
                                             <tbody>
-                                                <tr className="border-t-[1px] border-gray-400">
-                                                    <td className="py-3 text-left">Sujon1</td>
-                                                    <td className="py-3 text-center">22/1</td>
-                                                    <td className="px-4 py-3 text-center">4.2</td>
-                                                </tr>
-                                                <tr className="border-t-[1px] border-gray-400">
-                                                    <td className="py-3 text-left">Sujon1</td>
-                                                    <td className="px-4 py-3 text-center">22/1</td>
-                                                    <td className="px-4 py-3 text-center">4.2</td>
-                                                </tr>
-                                                <tr className="border-t-[1px] border-gray-400">
-                                                    <td className="py-3 text-left">Sujon1</td>
-                                                    <td className="px-4 py-3 text-center">22/1</td>
-                                                    <td className="px-4 py-3 text-center">4.2</td>
-                                                </tr>
+                                            {
+                                            scoreBoard?(
+                                                scoreBoard.team2_fall_of_wickets.length>0?(
+                                                    scoreBoard.team2_fall_of_wickets.map((wicket,index)=>{
+                                                        return <tr key={index} className="border-t-[1px] border-gray-400">
+                                                        <td className="py-3 text-left">{wicket.batsman.player.name}</td>
+                                                        <td className="px-4 py-3 text-center">{wicket.score}/{wicket.wicket}</td>
+                                                        <td className="px-4 py-3 text-center">{wicket.nth_over}.{wicket.nth_ball}</td>
+                                                    </tr>
+                                                    })
+                                                ):null
+                                            ):null
+                                                }
                                             </tbody>
                                         </table>
                                 </div>

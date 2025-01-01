@@ -24,6 +24,8 @@ from partnerships.models import Partnerships
 from bowler.serializers import BowlerSerializer
 from batsman.serializers import BatsmanSerializer
 from extras.models import Extras
+from fall_of_wickets.serializers import FallOfWicketsSerializer
+from fall_of_wickets.models import FallOfWickets
 # Create your views here.
 
 class ScoreBoardViewSet(APIView):
@@ -37,20 +39,27 @@ class ScoreBoardViewSet(APIView):
             team1_bowlers = Bowler.objects.filter(team=match.team1,match=match)
             team2_bowlers = Bowler.objects.filter(team=match.team2,match=match)
 
-        
+            team1_fall_of_wickets = FallOfWickets.objects.filter(team=match.team1,match=match)
+            team2_fall_of_wickets = FallOfWickets.objects.filter(team=match.team2,match=match)
 
+
+
+            match_data = ScoreBoardSerializer(match).data
             team_1_batsmans_data = BatsmanSerializer(team1_batsmans,many=True).data
             team_2_batsmans_data = BatsmanSerializer(team2_batsmans,many=True).data
             team_1_bowlers_data = BowlerSerializer(team1_bowlers,many=True).data
             team_2_bowlers_data = BowlerSerializer(team2_bowlers,many=True).data
-            match_data = ScoreBoardSerializer(match).data
+            team1_fall_of_wickets_data = FallOfWicketsSerializer(team1_fall_of_wickets,many=True).data
+            team2_fall_of_wickets_data = FallOfWicketsSerializer(team2_fall_of_wickets,many=True).data
 
             return Response({
                 "match":match_data,
                 "team1_batsmans":team_1_batsmans_data,
                 "team2_batsmans":team_2_batsmans_data,
                 "team1_bowlers":team_1_bowlers_data,
-                "team2_bowlers":team_2_bowlers_data
+                "team2_bowlers":team_2_bowlers_data,
+                "team1_fall_of_wickets":team1_fall_of_wickets_data,
+                "team2_fall_of_wickets":team2_fall_of_wickets_data,
             },status=status.HTTP_200_OK)
         except Match.DoesNotExist:
             return Response({"detail":"Match not found"},status=status.HTTP_400_BAD_REQUEST)
