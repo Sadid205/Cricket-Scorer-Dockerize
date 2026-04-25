@@ -41,7 +41,7 @@ services:
     image: ghcr.io/sadid205/cricketscorer-frontend:latest
     command: >
       bash -c "
-      npm run start
+      npm run preview
       "
     env_file:
       - ./.env.production
