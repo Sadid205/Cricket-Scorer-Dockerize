@@ -8,7 +8,7 @@ const Teams = ()=>{
     const Token = localStorage.getItem("Token")
     const [teams,setTeams] = useState()
     const VITE_REQUEST_URL=import.meta.env.VITE_REQUEST_URL
-    // console.log(author_id)
+
     useEffect(()=>{
         const Teams = async()=>{
             const get_teams = await fetch(`${VITE_REQUEST_URL}teams/list/${author_id}/`,{method:'GET',headers:{

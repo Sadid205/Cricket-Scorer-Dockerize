@@ -12,7 +12,7 @@ const SelectOpeningPlayer = ()=>{
     const onSubmit = (e)=>{
         const Token = localStorage.getItem("Token")
         e.preventDefault()
-        // console.log(striker,nonStriker,bowler,match_id)
+
         if (striker==="" || nonStriker==="" || bowler===""){
             if(striker===""){
                 const notify = ()=>{
@@ -47,7 +47,7 @@ const SelectOpeningPlayer = ()=>{
                 })
             })
             const select_player_response = await select_player.json()
-            // console.log(select_player_response)
+
             if (select_player_response){
                 setLoading(false)
             }

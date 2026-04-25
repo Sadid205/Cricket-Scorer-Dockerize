@@ -70,7 +70,7 @@ const History = ()=>{
                             <p className="font-semibold">{
                                 (match.toss_winner==match.team1.id&&match.elected=="Bat")||(match.toss_winner==match.team2.id&&match.elected=="Bowl")?(match.first_innings_run+ "/" +match.first_innings_wicket):(match.second_innings_run+ "/" +match.second_innings_wicket)
                             } <span className="text-xs text-gray-600">{
-                                match.toss_winner==match.team1.id&&match.elected=="Bat"||(match.toss_winner==match.team2.id&&match.elected=="Bowl")?(match.first_innings_nth_over + "." + match.first_innings_nth_ball):(match.second_innings_nth_over + "." + match.second_innings_nth_ball)
+                               (match.toss_winner==match.team1.id&&match.elected=="Bat")||(match.toss_winner==match.team2.id&&match.elected=="Bowl")?(match.first_innings_nth_over + "." + match.first_innings_nth_ball):(match.second_innings_nth_over + "." + match.second_innings_nth_ball)
                             }</span></p>
                         </div>
                     </div>

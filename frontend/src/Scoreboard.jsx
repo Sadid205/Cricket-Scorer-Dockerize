@@ -20,7 +20,7 @@ const ScoreBoard = ()=>{
             Overs:key==="Overs"
         })
     }
-    // console.log(author_id)
+
     useEffect(()=>{
         const ScorBoard = async()=>{
             const get_score = await fetch(`${VITE_REQUEST_URL}match/scoreboard/${match_id}/`,{method:'GET',headers:{
@@ -32,7 +32,7 @@ const ScoreBoard = ()=>{
         }
         ScorBoard()
     },[match_id,Token])
-    console.log(scoreBoard)
+
     return (
         <div className="h-screen w-screen">
             <div className="h-1/4 relative bg-green-600">
@@ -67,7 +67,7 @@ const ScoreBoard = ()=>{
                                 <div className="flex text-white text-md md:text-xl w-11/12 m-auto justify-between items-center gap-2">
                                     <p>{scoreBoard&&scoreBoard.match.team1.team_name.slice(0,17)}</p>
                                     <div className="flex items-center gap-2">
-                                        {/* {console.log(scoreBoard?.match)} */}
+
                                     <p className="font-semibold">
                                         {
                                             scoreBoard?(

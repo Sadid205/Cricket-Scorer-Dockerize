@@ -6,7 +6,7 @@ const PlayerDetails = ()=>{
         const {id} = useParams()
         const Token = localStorage.getItem("Token")
         const VITE_REQUEST_URL=import.meta.env.VITE_REQUEST_URL
-        // console.log(author_id)
+
         useEffect(()=>{
             const GetPlayersData = async()=>{
                 const get_data = await fetch(`${VITE_REQUEST_URL}player/player_details/${id}/`,{method:'GET',headers:{

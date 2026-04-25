@@ -29,16 +29,12 @@ SECRET_KEY = 'django-insecure-3!80tgmb%3958ho*q&l%gmqr-0q6-1oy#zslt%hs+oezn#h!ab
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost','127.0.0.1','frontend']
-CSRF_TRUSTED_ORIGINS = ['https://cricket-scorer-final-project-back-end.onrender.com','https://*.127.0.0.1']
-CORS_ORIGIN_ALLOW_ALL = True
+ALLOWED_HOSTS = env("ALLOWED_HOSTS", default="").split(",")
+CSRF_TRUSTED_ORIGINS =  env("CSRF_TRUSTED_ORIGINS", default="").split(",")
+CORS_ALLOWED_ORIGINS = env("CORS_ALLOWED_ORIGINS", default="").split(",")
+CORS_ORIGIN_WHITELIST = env("CORS_ORIGIN_WHITELIST", default="").split(",")
 
 # Application definition
-CORS_ORIGIN_WHITELIST = [
-    'http://localhost:5173',
-    'http://frontend:5173',
-    'http://127.0.0.1:5173',
-]
 SITE_ID = 1
 
 INSTALLED_APPS = [
@@ -123,14 +119,16 @@ WSGI_APPLICATION = 'cricketscorer.wsgi.app'
 #     }
 # }
 
+
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME':env('NAME'),
-        'USER':env('USER'),
-        'PASSWORD':env('PASSWORD'),
-        'HOST':env('HOST'),
-        'PORT':env('PORT')
+        'NAME':env('POSTGRES_DB'),
+        'USER':env('POSTGRES_USER'),
+        'PASSWORD':env('POSTGRES_PASSWORD'),
+        'HOST':env('POSTGRES_HOST'),
+        'PORT':env('POSTGRES_PORT')
     }
 }
 
@@ -185,6 +183,7 @@ MEDIA_ROOT =  os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
+
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

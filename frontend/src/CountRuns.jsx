@@ -45,11 +45,11 @@ const CountRuns = ()=>{
     socketInstance.onopen = function(event){
       const match_data = JSON.parse(event.data)
       setScore(match_data)
-      // console.log(match_data)
+
     }
     socketInstance.onmessage = function(event){
         const match_data = JSON.parse(event.data)
-        // console.log('received data:',match_data);
+        // 
         setScore(match_data)
         setWideChecked(false)
         setNoBallChecked(false)
@@ -59,10 +59,10 @@ const CountRuns = ()=>{
         setPanalty(false)
     };
     socketInstance.onerror = function(error){
-        console.log('websocket eror',error)
+
     }
     socketInstance.onclose = function(event){
-        console.log('websocket connection closed!')
+
     }
     setSocket(socketInstance)
     return ()=>{
@@ -89,11 +89,11 @@ const CountRuns = ()=>{
         "panalty_runs":panaltyRuns,
         }
     if(socket && socket.readyState === WebSocket.OPEN){
-      console.log("Data sent",data)
+
       socket.send(JSON.stringify(data))
     }
    }
-   console.log(score)
+
    useEffect(()=>{
     sendData()
    },[increase])
@@ -121,7 +121,7 @@ const CountRuns = ()=>{
           setShowMatchFinishedModal(true)
       }
     },[score?.updated_data?.overs_data])
-    // console.log(score)
+
     const handleRetire = (e)=>{
      e.preventDefault()
      if (retiredData.retired_batsman==null){
@@ -347,7 +347,7 @@ const CountRuns = ()=>{
           window.location.reload()
         }
     }
-    // console.log(score)
+
     const handleRetiredChange = (e)=>{
       // e.preventDefault()
       setRetiredData((prevState)=>({

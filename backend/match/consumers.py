@@ -954,9 +954,6 @@ def get_updated_match_data(match_id):
              
             
                
-            
-        
-
 class ScoreUpdateReceiveConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         try:
@@ -982,7 +979,7 @@ class ScoreUpdateReceiveConsumer(AsyncWebsocketConsumer):
             )
         except Exception as e:
             await self.send(text_data=json.dumps({
-                'error' 'There was an issue with the connection!'
+                'error':'There was an issue with the connection!'
             }))
     async def score_update(self,event):
             match_data = event['match_data']

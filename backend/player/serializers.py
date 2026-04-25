@@ -3,6 +3,7 @@ from .models import Player
 from fielding.serializers import FieldingSerializer
 from batting.serializers import BattingSerializer
 from bowling.serializers import BowlingSerializer
+
 class PlayerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Player

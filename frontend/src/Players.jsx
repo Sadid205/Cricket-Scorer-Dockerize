@@ -9,7 +9,7 @@ const Players = ()=>{
     const {team_id} = useParams()
     const Token = localStorage.getItem("Token")
     const VITE_REQUEST_URL=import.meta.env.VITE_REQUEST_URL
-    // console.log(author_id)
+
     useEffect(()=>{
         const GetPlayers = async()=>{
             const get_players_list = await fetch(`${VITE_REQUEST_URL}player/list/${team_id}/`,{method:'GET',headers:{
@@ -21,7 +21,7 @@ const Players = ()=>{
         }
         GetPlayers()
     },[team_id,Token])
-    // console.log(players)
+
     return (
     <div className="">
         {
