@@ -40,7 +40,7 @@ services:
           memory: 400M
     image: ghcr.io/sadid205/cricketscorer-frontend:latest
     command: >
-      bash -c "configs:
+      bash -c "
       npm run start
       "
     env_file:
