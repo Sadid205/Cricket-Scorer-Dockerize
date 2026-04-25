@@ -1,0 +1,110 @@
+name: CI/CD Pipeline
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: $${{ github.actor }}
+          password: $${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set lowercase owner
+        id: owner
+        run: echo "owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[::lower]')" >> $GITHUB_OUTPUT
+
+      - name: Build & Push Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend/Dockerfile
+          push: true
+          tags: ghcr.io/${{ steps.owner.outputs.owner }}/cricketscorer-frontend:latest
+          build-args: |
+            VITE_CLIENT_ID=${{secrets.VITE_CLIENT_ID}}
+            VITE_REQUEST_URL=${{secrets.VITE_REQUEST_URL}}
+            PORT=5173
+      - name: Build & Push Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend/Dockerfile
+          push: true
+          tags: ghcr.io/${{ steps.owner.outputs.owner }}/cricketscorer-backend:latest
+
+      - name: Create directory on VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_IP }}
+          username: ${{ secrets.HOST_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            sudo mkdir -p /opt/cricketscorer
+            sudo chown -R $USER:$USER /opt/cricketscorer
+
+      - name: Create .env file on VPS
+        uses: appleboy/ssh-action@/v1.0.3
+        with:
+          host: ${{ secrets.VPS_IP }}
+          username: ${{ secrets.HOST_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            echo "${{ secrets.ENV_PRODUCTION }}" > /opt/cricketscorer/.env.production
+            chmod 600 /opt/cricketscorer/.env.production
+
+      - name: Copy docker compose file to VPS
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.VPS_IP }}
+          username: ${{ secrets.HOST_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          source: "docker-compose.production.yml"
+          target: /opt/schoolerp
+          strip_components: 0
+
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_IP }}
+          username: ${{ secrets.HOST_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          command_timeout: 40m
+
+          script: |
+            set -e
+
+            cd /opt/schoolerp
+
+            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            echo "Pulling latest images..."
+
+            docker compose -f docker-compose.production.yml pull
+
+            echo "Starting services..."
+            docker compose -f docker-compose.production.yml up -d --remove-orphans
+
+            echo "Waiting for database to be ready..."
+            until docker compose -f docker-compose.production.yml exec -T cricketscorer-db pg_isready; do
+            sleep 2
+            done
+
+            echo "Running migrations..."
+            docker compose -f docker-compose.production.yml run --rm cricketscorer-backend python manage.py migrate
+
+            echo "Cleanup..."
+            docker image prune -f
+            echo "Cleanup completed..."

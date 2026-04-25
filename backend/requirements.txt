@@ -1,4 +1,5 @@
 asgiref
+gunicorn
 attrs
 autobahn
 Automat

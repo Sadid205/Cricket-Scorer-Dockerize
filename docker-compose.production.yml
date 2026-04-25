@@ -1,0 +1,95 @@
+services:
+  # Django Backend
+  cricketscorer-backend:
+    deploy:
+      resources:
+        limits:
+          memory: 800M
+        reservations:
+          memory: 300M
+    image: ghcr.io/sadid205/cricketscorer-backend:latest
+    command: >
+      bash -c "
+      python manage.py collectstatic --noinput &&
+      gunicorn cricketscorer.wsgi:application --bind 0.0.0.0:8000 --workers 3
+      "
+    volumes:
+      - ./staticfiles:/app/staticfiles
+      - ./media:/app/media
+    ports:
+      - "8002:8000"
+    environment:
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+    env_file:
+      - .env.production
+    depends_on:
+      - cricketscorer-db:
+          condition: service_healthy
+    networks:
+      - cricketscorer-network
+    restart: unless-stopped
+
+  # React Frontend
+  cricketscorer-frontend:
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 400M
+    image: ghcr.io/sadid205/cricketscorer-frontend:latest
+    command: >
+      bash -c "configs:
+      npm run start
+      "
+    env_file:
+      - ./.env.production
+    ports:
+      - "5173:5173"
+    networks:
+      - cricketscorer-network
+    restart: unless-stopped
+
+  # PostgreSQL Database
+  cricketscorer-db:
+    deploy:
+      resources:
+        limits:
+          memory: 500M
+        reservations:
+          memory: 200M
+    image: postgres:14
+    restart: unless-stopped
+    env_file:
+      - ./.env.production
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
+    networks:
+      - cricketscorer-network
+
+  #redis setup
+  redis:
+    image: "redis:latest"
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - cricketscorer-network
+    restart: unless-stopped
+
+networks:
+  cricketscorer-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
