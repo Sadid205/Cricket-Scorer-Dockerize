@@ -21,8 +21,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: $${{ github.actor }}
-          password: $${{ secrets.GITHUB_TOKEN }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set lowercase owner
         id: owner
@@ -31,17 +31,19 @@ jobs:
       - name: Build & Push Frontend
         uses: docker/build-push-action@v5
         with:
-          context: ./frontend/Dockerfile
+          context: ./frontend
+          file: ./frontend/Dockerfile
           push: true
           tags: ghcr.io/${{ steps.owner.outputs.owner }}/cricketscorer-frontend:latest
           build-args: |
-            VITE_CLIENT_ID=${{secrets.VITE_CLIENT_ID}}
-            VITE_REQUEST_URL=${{secrets.VITE_REQUEST_URL}}
+            VITE_CLIENT_ID=${{ secrets.VITE_CLIENT_ID }}
+            VITE_REQUEST_URL=${{ secrets.VITE_REQUEST_URL }}
             PORT=5173
       - name: Build & Push Backend
         uses: docker/build-push-action@v5
         with:
-          context: ./backend/Dockerfile
+          context: ./backend
+          file: ./backend/Dockerfile
           push: true
           tags: ghcr.io/${{ steps.owner.outputs.owner }}/cricketscorer-backend:latest
 
@@ -56,7 +58,7 @@ jobs:
             sudo chown -R $USER:$USER /opt/cricketscorer
 
       - name: Create .env file on VPS
-        uses: appleboy/ssh-action@/v1.0.3
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_IP }}
           username: ${{ secrets.HOST_USERNAME }}
@@ -72,7 +74,7 @@ jobs:
           username: ${{ secrets.HOST_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           source: "docker-compose.production.yml"
-          target: /opt/schoolerp
+          target: /opt/cricketscorer
           strip_components: 0
 
       - name: Deploy to VPS via SSH
@@ -86,7 +88,7 @@ jobs:
           script: |
             set -e
 
-            cd /opt/schoolerp
+            cd /opt/cricketscorer
 
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
