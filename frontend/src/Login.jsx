@@ -1,4 +1,4 @@
-import { GoogleOAuthProvider } from '@react-oauth/google';
+import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
@@ -151,7 +151,12 @@ return (
   </div>
   <GoogleOAuthProvider clientId={CLIENT_ID}>
       <div className="mt-4">
-
+          <GoogleLogin
+          onSuccess={handleLogin}
+          onError={() => {
+            toast("Google Login Failed");
+          }}
+        />
       </div>
   </GoogleOAuthProvider>
 </div>
