@@ -9,12 +9,17 @@ https://docs.djangoproject.com/en/5.1/howto/deployment/asgi/
 
 import os
 
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cricketscorer.settings')
+
 from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
-from match import consumers
 from django.urls import re_path
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cricketscorer.settings')
+
+application = get_asgi_application() 
+
+from match import consumers  
+
 
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),
