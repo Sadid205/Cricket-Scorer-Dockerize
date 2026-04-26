@@ -1,8 +1,9 @@
-import { Link,Navigate, useNavigate} from "react-router-dom";
+import { useEffect, useState } from "react";
 import { RxCross1 } from "react-icons/rx";
-import { useState,useEffect } from "react";
-import { ToastContainer,toast } from "react-toastify";
+import { Link, useNavigate } from "react-router-dom";
+import { ToastContainer, toast } from "react-toastify";
 const CountRuns = ()=>{
+    const VITE_REQUEST_URL=import.meta.env.VITE_REQUEST_URL
     const Token = localStorage.getItem("Token")
     const navigate = useNavigate()
     const match_id = localStorage.getItem("match_id")
@@ -37,11 +38,11 @@ const CountRuns = ()=>{
     const [secondInningsBowler,setSecondInningsBowler] = useState("")
     const [showMatchFinishedModal,setShowMatchFinishedModal] = useState(false)
     const [loading,setLoading] = useState(false)
-    const VITE_REQUEST_URL=import.meta.env.VITE_REQUEST_URL
+    const VITE_WS_URL=import.meta.env.VITE_WS_URL
     const [socket,setSocket] = useState(null)
     const [increase,setIncrease] = useState(0)
    useEffect(()=>{
-    const socketInstance = new WebSocket(`ws://localhost:8000/ws/test/${match_id}/`);
+    const socketInstance = new WebSocket(`${VITE_WS_URL}/test/${match_id}/`);
     socketInstance.onopen = function(event){
       const match_data = JSON.parse(event.data)
       setScore(match_data)
@@ -363,17 +364,17 @@ const CountRuns = ()=>{
     }
     return (
     <div className="relative h-full overflow-hidden">
-       <div style={{ boxShadow: "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)"}} className="w-11/12 md:h-48 rounded-2xl md:flex bg-gray-200 justify-around p-4 m-auto bg-white">
-            <div className="h-full text-center w-72 m-auto">
+       <div style={{ boxShadow: "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)"}} className="justify-around w-11/12 p-4 m-auto bg-white bg-gray-200 md:h-48 rounded-2xl md:flex">
+            <div className="h-full m-auto text-center w-72">
                 <p className="font-bold">{score?(score.updated_data?(score.updated_data.batting_team_name):("")):("Batting Team")} Team,{score?(score.updated_data?(score.updated_data.innings):("")):("")} innings</p>
                 <div className="">
                     <h1 className="text-6xl">{score?(score.updated_data?(score.updated_data.run):("00")):("00")} - {score?(score.updated_data?(score.updated_data.wicket):("0")):("0")} <span className="text-base font-bold">({score?(score.updated_data?(score.updated_data.over):("0")):("0")}.{score?(score.updated_data?(score.updated_data.nth_ball):("0")):("0")})</span></h1>
                 </div>
             </div>
-            <div className="flex justify-center items-center">
+            <div className="flex items-center justify-center">
                 <p className="text-xs font-bold">{score?(score.updated_data?(score.updated_data.status):("")):("")}</p>
             </div>
-            <div className="h-full w-72 text-center m-auto">
+            <div className="h-full m-auto text-center w-72">
                 <p className="font-bold">CURR</p>
                 <div>
                     <h1 className="text-6xl">{score?(score.updated_data?(score.updated_data.run_rate.toFixed(2)):("0.00")):("0.00")}</h1>
@@ -383,9 +384,9 @@ const CountRuns = ()=>{
 
 
         <div className="overflow-x-auto">
-            <table style={{ boxShadow: "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)"}} className="text-sm over m-auto w-11/12 mt-10 text-left rtl:text-right  p-3 mb-3 rounded rounded-md">
+            <table style={{ boxShadow: "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)"}} className="w-11/12 p-3 m-auto mt-10 mb-3 text-sm text-left rounded rounded-md over rtl:text-right">
                 <thead>
-                    <tr className="border-gray-500 border-b-2">
+                    <tr className="border-b-2 border-gray-500">
                         <th scope="col" className="px-6 py-3">
                             Batsman
                         </th>
@@ -407,7 +408,7 @@ const CountRuns = ()=>{
                     </tr>
                 </thead>
                 <tbody>
-                    <tr className="bg-white bg-white dark:border-gray-700">
+                    <tr className="bg-white dark:border-gray-700">
                         <th scope="row" className="px-6 py-4 font-bold">
                         {score?(score.updated_data?(score.updated_data.striker_name):("Striker")):("Striker")}<span>*</span>
                         </th>
@@ -427,7 +428,7 @@ const CountRuns = ()=>{
                         {score?(score.updated_data?(score.updated_data.striker_strike_rate.toFixed(2)):("0.00")):("0.00")}
                         </td>
                     </tr>
-                    <tr className="bg-white bg-white dark:border-gray-700">
+                    <tr className="bg-white dark:border-gray-700">
                         <th scope="row" className="px-6 py-4 font-bold">
                         {score?(score.updated_data?(score.updated_data.non_striker_name):("Non Striker")):("Non Striker")}
                         </th>
@@ -451,9 +452,9 @@ const CountRuns = ()=>{
             </table>
             </div>
             <div className="overflow-x-auto">
-            <table style={{ boxShadow: "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)"}} className="text-sm w-11/12 m-auto text-left mb-3">
+            <table style={{ boxShadow: "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)"}} className="w-11/12 m-auto mb-3 text-sm text-left">
                 <thead>
-                    <tr className="border-gray-500 border-b-2">
+                    <tr className="border-b-2 border-gray-500">
                         <th scope="col" className="px-6 py-3">
                             Bowler
                         </th>
@@ -475,7 +476,7 @@ const CountRuns = ()=>{
                     </tr>
                 </thead>
                 <tbody>
-                    <tr className="bg-white bg-white dark:border-gray-700 font-bold font-bold">
+                    <tr className="font-bold bg-white dark:border-gray-700">
                         <th scope="row" className="px-6 py-4">
                         {score?(score.updated_data?(score.updated_data.overs_data[score?.updated_data?.overs_data?.length-1].bowler?.name):("Bowler Name")):("Bowler Name")}
                         </th>
@@ -500,27 +501,27 @@ const CountRuns = ()=>{
                 </tbody>
             </table>
         </div>
-        <div style={{ boxShadow: "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)"}} className="w-11/12 h-16 p-2 rounded rounded-md m-auto mt-4">
+        <div style={{ boxShadow: "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)"}} className="w-11/12 h-16 p-2 m-auto mt-4 rounded rounded-md">
             <div className="flex">
-                <h1 className="font-bold text-xs md:text-base">This over:</h1>
-                <div className="overflow-x-auto flex">
+                <h1 className="text-xs font-bold md:text-base">This over:</h1>
+                <div className="flex overflow-x-auto">
                 {score?(score.updated_data?(score.updated_data.overs_data[score?.updated_data?.overs_data?.length-1].balls?.map((ball,index)=>{
                     return <div key={index} className="text-center">
-                    <div className="w-8 bg-red-400 h-8 mx-3 text-white text-xs rounded-full flex justify-center items-center border-2 border-gray-400">{ball.runs}</div>
+                    <div className="flex items-center justify-center w-8 h-8 mx-3 text-xs text-white bg-red-400 border-2 border-gray-400 rounded-full">{ball.runs}</div>
                     <p className="text-xs font-bold">{ball.ball_type}</p>
                </div>
                 })):<div className="text-center">
-                <div className="w-8 bg-red-400 h-8 mx-3 text-white text-xs rounded-full flex justify-center items-center border-2 border-gray-400">0</div>
+                <div className="flex items-center justify-center w-8 h-8 mx-3 text-xs text-white bg-red-400 border-2 border-gray-400 rounded-full">0</div>
                 <p className="text-xs font-bold">DB</p>
                 </div>):(<div className="text-center">
-                    <div className="w-8 bg-red-400 h-8 mx-3 text-white text-xs rounded-full flex justify-center items-center border-2 border-gray-400">0</div>
+                    <div className="flex items-center justify-center w-8 h-8 mx-3 text-xs text-white bg-red-400 border-2 border-gray-400 rounded-full">0</div>
                     <p className="text-xs font-bold">DB</p>
                </div>)}
                 </div>
             </div>
         </div>
-        <div style={{ boxShadow: "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)"}} className="w-11/12 md:h-20 h-32 p-4 rounded rounded-md m-auto mt-4">
-            <div className="flex justify-evenly flex-wrap">
+        <div style={{ boxShadow: "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)"}} className="w-11/12 h-32 p-4 m-auto mt-4 rounded rounded-md md:h-20">
+            <div className="flex flex-wrap justify-evenly">
                 <div className="flex">
                     <div className="flex items-center">
                         <input onChange={(e)=>{handleChecked(e);handle_wide_checked(e)}} checked={wideChecked} className="w-6 h-4" type="checkbox" id="wide" name="wide"/>
@@ -535,7 +536,7 @@ const CountRuns = ()=>{
                         <label htmlFor="byes" className="font-bold text-gray-500">Byes</label>
                     </div>
                 </div>
-                <div className="flex items-center flex-wrap">
+                <div className="flex flex-wrap items-center">
                     <div className="flex items-center">
                             <input className="w-6 h-4" type="checkbox" id="legByes" name="legByes"  onChange={(e)=>{handleChecked(e);handle_leg_byes_checked(e)}} checked={legByesChecked} />
                             <label htmlFor="legByes" className="font-bold text-gray-500">Leg Byes</label>
@@ -545,63 +546,63 @@ const CountRuns = ()=>{
                         <label htmlFor="wicket" className="font-bold text-gray-500">Wicket</label>
                     </div>
                     <div className="flex items-center m-auto">
-                        <button onClick={()=>{setRetire(true)}} className="border px-4 py-1 rounded-md bg-green-600 md:text-base text-xs md:font-bold text-white border-2">Retire</button>
+                        <button onClick={()=>{setRetire(true)}} className="px-4 py-1 text-xs text-white bg-green-600 border border-2 rounded-md md:text-base md:font-bold">Retire</button>
                     </div>
                     <div className="flex items-center m-auto">
-                        <button onClick={(e)=>handleSwap(e)} className="border px-4 py-1 rounded-md bg-green-600 text-xs md:text-base md:font-semibold text-white border-2">Swap Batsman</button>
+                        <button onClick={(e)=>handleSwap(e)} className="px-4 py-1 text-xs text-white bg-green-600 border border-2 rounded-md md:text-base md:font-semibold">Swap Batsman</button>
                     </div>
                 </div>
             </div>
         </div>
-        <div className="md:h-52 flex gap-3 w-11/12 m-auto mt-3">
-            <div style={{ boxShadow: "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)"}} className="w-2/5 py-11 text-center my-auto rounded rounded-md">
+        <div className="flex w-11/12 gap-3 m-auto mt-3 md:h-52">
+            <div style={{ boxShadow: "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)"}} className="w-2/5 my-auto text-center rounded rounded-md py-11">
                 <div className="m-3">
-                    <button className="bg-green-700 text-white font-base md:font-semibold rounded-md px-7 md:px-10 py-1">Undo</button>
+                    <button className="py-1 text-white bg-green-700 rounded-md font-base md:font-semibold px-7 md:px-10">Undo</button>
                 </div>
                 <div className="m-3">
-                    <button onClick={(e)=>setPartnerships((prevState)=>!prevState)} className="bg-green-700 text-white font-base md:font-semibold rounded-md px-1 md:px-4 py-1">Partnerships</button>
+                    <button onClick={(e)=>setPartnerships((prevState)=>!prevState)} className="px-1 py-1 text-white bg-green-700 rounded-md font-base md:font-semibold md:px-4">Partnerships</button>
                 </div>
                 <div className="m-3">
-                    <button onClick={(e)=>setExtras((prevState)=>!prevState)} className="bg-green-700 text-white font-base md:font-semibold rounded-md px-7 md:px-10 py-1">Extras</button>
+                    <button onClick={(e)=>setExtras((prevState)=>!prevState)} className="py-1 text-white bg-green-700 rounded-md font-base md:font-semibold px-7 md:px-10">Extras</button>
                 </div>
             </div>
-            <div style={{ boxShadow: "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)"}} className="w-3/5 p-2 rounded rounded-md mt-8 md:m-0">
+            <div style={{ boxShadow: "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)"}} className="w-3/5 p-2 mt-8 rounded rounded-md md:m-0">
                <div className="flex mt-2">
-               <button onClick={(e)=>updateScore(e,0)} className="md:w-20 md:h-20 w-10 h-10  font-bold   text-xl md:text-4xl flex items-center justify-center border-green-700 border-4 rounded-full m-auto">0</button>
-                <button onClick={(e)=>updateScore(e,1)} className="md:w-20 md:h-20 w-10 h-10  font-bold  text-xl md:text-4xl flex items-center justify-center border-green-700 border-4 rounded-full m-auto">1</button>
-                <button onClick={(e)=>updateScore(e,2)} className="md:w-20 md:h-20 w-10 h-10  font-bold  text-xl md:text-4xl flex items-center justify-center border-green-700 border-4 rounded-full m-auto">2</button>
-                <button onClick={(e)=>updateScore(e,3)} className="md:w-20 md:h-20 w-10 h-10  font-bold  text-xl md:text-4xl flex items-center justify-center border-green-700 border-4 rounded-full m-auto">3</button>
+               <button onClick={(e)=>updateScore(e,0)} className="flex items-center justify-center w-10 h-10 m-auto text-xl font-bold border-4 border-green-700 rounded-full md:w-20 md:h-20 md:text-4xl">0</button>
+                <button onClick={(e)=>updateScore(e,1)} className="flex items-center justify-center w-10 h-10 m-auto text-xl font-bold border-4 border-green-700 rounded-full md:w-20 md:h-20 md:text-4xl">1</button>
+                <button onClick={(e)=>updateScore(e,2)} className="flex items-center justify-center w-10 h-10 m-auto text-xl font-bold border-4 border-green-700 rounded-full md:w-20 md:h-20 md:text-4xl">2</button>
+                <button onClick={(e)=>updateScore(e,3)} className="flex items-center justify-center w-10 h-10 m-auto text-xl font-bold border-4 border-green-700 rounded-full md:w-20 md:h-20 md:text-4xl">3</button>
                </div>
                 <div className="flex mt-5">
-                <button onClick={(e)=>updateScore(e,4)} className="md:w-20 md:h-20 w-10 h-10  font-bold  text-xl md:text-4xl flex items-center justify-center border-green-700 border-4 rounded-full m-auto">4</button>
-                <button onClick={(e)=>updateScore(e,5)} className="md:w-20 md:h-20 w-10 h-10  font-bold  text-xl md:text-4xl flex items-center justify-center border-green-700 border-4 rounded-full m-auto">5</button>
-                <button onClick={(e)=>updateScore(e,6)} className="md:w-20 md:h-20 w-10 h-10  font-bold  text-xl md:text-4xl flex items-center justify-center border-green-700 border-4 rounded-full m-auto">6</button>
-                <button onClick={(e)=>setPanalty(true)} className="md:w-20 md:h-20 w-10 h-10  font-bold  text-xl md:text-4xl flex items-center justify-center border-green-700 border-4 rounded-full m-auto">...</button>
+                <button onClick={(e)=>updateScore(e,4)} className="flex items-center justify-center w-10 h-10 m-auto text-xl font-bold border-4 border-green-700 rounded-full md:w-20 md:h-20 md:text-4xl">4</button>
+                <button onClick={(e)=>updateScore(e,5)} className="flex items-center justify-center w-10 h-10 m-auto text-xl font-bold border-4 border-green-700 rounded-full md:w-20 md:h-20 md:text-4xl">5</button>
+                <button onClick={(e)=>updateScore(e,6)} className="flex items-center justify-center w-10 h-10 m-auto text-xl font-bold border-4 border-green-700 rounded-full md:w-20 md:h-20 md:text-4xl">6</button>
+                <button onClick={(e)=>setPanalty(true)} className="flex items-center justify-center w-10 h-10 m-auto text-xl font-bold border-4 border-green-700 rounded-full md:w-20 md:h-20 md:text-4xl">...</button>
                 </div>
             </div>
         </div>
       {showModal ? (
         <>
           <div
-            className="justify-center items-center flex overflow-x-hidden overflow-y-auto fixed inset-0 z-50 outline-none focus:outline-none"
+            className="fixed inset-0 z-50 flex items-center justify-center overflow-x-hidden overflow-y-auto outline-none focus:outline-none"
           >
-            <div className="relative w-auto my-6 mx-auto max-w-3xl">
+            <div className="relative w-auto max-w-3xl mx-auto my-6">
               {/*content*/}
-              <div className="border-0 rounded-lg shadow-lg relative flex flex-col w-full bg-white outline-none focus:outline-none">
+              <div className="relative flex flex-col w-full bg-white border-0 rounded-lg shadow-lg outline-none focus:outline-none">
                 {/*header*/}
-                <div className="flex items-start justify-between p-5 border-b border-solid border-blueGray-200 rounded-t">
+                <div className="flex items-start justify-between p-5 border-b border-solid rounded-t border-blueGray-200">
                   <h3 className="text-3xl font-semibold">
                     Select a new bowler
                   </h3>
                 </div>
                 {/*body*/}
-                <div className="relative p-6 flex-auto">
-                <input required onChange={(e)=>setBowlerName(e.target.value)}  type="text" id="bowlerName" className="border-b dark:text-gray-900 text-sm block w-full p-1 dark:border-gray-600 dark:placeholder-gray-400 text-white outline-none focus:border-green-800 focus:border-b-2" placeholder="Name"/>
+                <div className="relative flex-auto p-6">
+                <input required onChange={(e)=>setBowlerName(e.target.value)}  type="text" id="bowlerName" className="block w-full p-1 text-sm text-white border-b outline-none dark:text-gray-900 dark:border-gray-600 dark:placeholder-gray-400 focus:border-green-800 focus:border-b-2" placeholder="Name"/>
                 </div>
                 {/*footer*/}
-                <div className="flex items-center justify-center p-6 border-t border-solid border-blueGray-200 rounded-b">
+                <div className="flex items-center justify-center p-6 border-t border-solid rounded-b border-blueGray-200">
                   <button
-                    className="bg-emerald-500 text-white active:bg-emerald-600 font-bold uppercase text-sm px-28 py-3 rounded shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150"
+                    className="py-3 mb-1 mr-1 text-sm font-bold text-white uppercase transition-all duration-150 ease-linear rounded shadow outline-none bg-emerald-500 active:bg-emerald-600 px-28 hover:shadow-lg focus:outline-none"
                     onClick={(e) => addNewBowler(e)}
                   >
                     Done
@@ -610,28 +611,28 @@ const CountRuns = ()=>{
               </div>
             </div>
           </div>
-          <div className="opacity-25 fixed inset-0 z-40 bg-black"></div>
+          <div className="fixed inset-0 z-40 bg-black opacity-25"></div>
         </>
       ) : null}
       {showWicketModal ? (
         <>
           <div
-            className="justify-center items-center flex overflow-x-hidden overflow-y-auto fixed inset-0 z-50 outline-none focus:outline-none"
+            className="fixed inset-0 z-50 flex items-center justify-center overflow-x-hidden overflow-y-auto outline-none focus:outline-none"
           >
-            <div className="relative w-auto my-6 mx-auto max-w-3xl">
+            <div className="relative w-auto max-w-3xl mx-auto my-6">
               {/*content*/}
-              <div className="border-0 rounded-lg shadow-lg relative flex flex-col w-full bg-white outline-none focus:outline-none">
+              <div className="relative flex flex-col w-full bg-white border-0 rounded-lg shadow-lg outline-none focus:outline-none">
                 {/*header*/}
-                <div className="flex items-start justify-between p-5 border-b border-solid border-blueGray-200 rounded-t">
+                <div className="flex items-start justify-between p-5 border-b border-solid rounded-t border-blueGray-200">
                   <h3 className="text-3xl font-semibold">
                     Fall of wicket
                   </h3>
                   <button onClick={(e)=>{setWicketChecked(false);setShowWicketModal(false)}}><span className="text-2xl"><RxCross1 /></span></button>
                 </div>
                 {/*body*/}
-                <div className="relative p-6 flex-auto">
+                <div className="relative flex-auto p-6">
                 <label htmlFor="how_wicket_fall" className="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-400">How wicket fall?</label>
-                <select onChange={(e)=>{setHowWicketFall(e.target.value)}} id="how_wicket_fall" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-1 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                <select onChange={(e)=>{setHowWicketFall(e.target.value)}} id="how_wicket_fall" className="block w-full p-1 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
                 <option value="bowled">Bowled</option>
                 <option value="catch_out">Catch Out</option>
                 <option value="run_out_striker">Run out striker</option>
@@ -641,14 +642,14 @@ const CountRuns = ()=>{
                 <option value="hit_wicket">Hit wicket</option>
                 </select>
                 {(howWicketFall=="catch_out" || howWicketFall=="run_out_striker" || howWicketFall=="run_out_non_striker" || howWicketFall=="stumping")?(<><label htmlFor="who_helped" className="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-400">Who helped?</label>
-                <input onChange={(e)=>setWhoHelped(e.target.value)} type="text" id="who_helped" className="border-b dark:text-gray-900 text-sm block w-full p-1 dark:border-gray-600 dark:placeholder-gray-400 text-white outline-none focus:border-green-800 focus:border-b-2" placeholder="Fielder name"/></>):""}
+                <input onChange={(e)=>setWhoHelped(e.target.value)} type="text" id="who_helped" className="block w-full p-1 text-sm text-white border-b outline-none dark:text-gray-900 dark:border-gray-600 dark:placeholder-gray-400 focus:border-green-800 focus:border-b-2" placeholder="Fielder name"/></>):""}
                 <label htmlFor="new_batsman" className="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-400">New batsman</label>
-                <input onChange={(e)=>setNewBatsman(e.target.value)} type="text" id="new_batsman" className="border-b dark:text-gray-900 text-sm block w-full p-1 dark:border-gray-600 dark:placeholder-gray-400 text-white outline-none focus:border-green-800 focus:border-b-2" placeholder="Batsman name"/>
+                <input onChange={(e)=>setNewBatsman(e.target.value)} type="text" id="new_batsman" className="block w-full p-1 text-sm text-white border-b outline-none dark:text-gray-900 dark:border-gray-600 dark:placeholder-gray-400 focus:border-green-800 focus:border-b-2" placeholder="Batsman name"/>
                 </div>
                 {/*footer*/}
-                <div className="flex items-center justify-center p-6 border-t border-solid border-blueGray-200 rounded-b">
+                <div className="flex items-center justify-center p-6 border-t border-solid rounded-b border-blueGray-200">
                   <button
-                    className="bg-emerald-500 text-white active:bg-emerald-600 font-bold uppercase text-sm px-28 py-3 rounded shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150"
+                    className="py-3 mb-1 mr-1 text-sm font-bold text-white uppercase transition-all duration-150 ease-linear rounded shadow outline-none bg-emerald-500 active:bg-emerald-600 px-28 hover:shadow-lg focus:outline-none"
                   onClick={(e)=>{doneSetRun(e)}}>
                     Done
                   </button>
@@ -656,19 +657,19 @@ const CountRuns = ()=>{
               </div>
             </div>
           </div>
-          <div className="opacity-25 fixed inset-0 z-40 bg-black"></div>
+          <div className="fixed inset-0 z-40 bg-black opacity-25"></div>
         </>
       ) : null}
       {showSecondInningsModal ? (
         <>
           <div
-            className="justify-center items-center flex overflow-x-hidden overflow-y-auto fixed inset-0 z-50 outline-none focus:outline-none"
+            className="fixed inset-0 z-50 flex items-center justify-center overflow-x-hidden overflow-y-auto outline-none focus:outline-none"
           >
-            <div className="relative w-auto my-6 mx-auto max-w-3xl">
+            <div className="relative w-auto max-w-3xl mx-auto my-6">
               {/*content*/}
-              <div className="border-0 rounded-lg shadow-lg relative flex flex-col w-full bg-white outline-none focus:outline-none">
+              <div className="relative flex flex-col w-full bg-white border-0 rounded-lg shadow-lg outline-none focus:outline-none">
                 {/*header*/}
-                <div className="flex items-start justify-between p-5 border-b border-solid border-blueGray-200 rounded-t">
+                <div className="flex items-start justify-between p-5 border-b border-solid rounded-t border-blueGray-200">
                   <h3 className="text-xl font-semibold">
                     Start second innings?
                   </h3>
@@ -677,16 +678,16 @@ const CountRuns = ()=>{
                 {/*body*/}
                     <div className="p-2">
                     <label htmlFor="striker" className="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-400">Striker</label>
-                    <input onChange={(e)=>setSecondInningsStriker(e.target.value)} type="text" id="striker" className="border-b dark:text-gray-900 text-sm block w-full p-1 dark:border-gray-600 dark:placeholder-gray-400 text-white outline-none focus:border-green-800 focus:border-b-2" placeholder="Striker name"/>
+                    <input onChange={(e)=>setSecondInningsStriker(e.target.value)} type="text" id="striker" className="block w-full p-1 text-sm text-white border-b outline-none dark:text-gray-900 dark:border-gray-600 dark:placeholder-gray-400 focus:border-green-800 focus:border-b-2" placeholder="Striker name"/>
                     <label htmlFor="non_striker" className="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-400">Non Striker</label>
-                    <input onChange={(e)=>setSecondInningsNonStriker(e.target.value)}  type="text" id="non_striker" className="border-b dark:text-gray-900 text-sm block w-full p-1 dark:border-gray-600 dark:placeholder-gray-400 text-white outline-none focus:border-green-800 focus:border-b-2" placeholder="Non-striker name"/>
+                    <input onChange={(e)=>setSecondInningsNonStriker(e.target.value)}  type="text" id="non_striker" className="block w-full p-1 text-sm text-white border-b outline-none dark:text-gray-900 dark:border-gray-600 dark:placeholder-gray-400 focus:border-green-800 focus:border-b-2" placeholder="Non-striker name"/>
                     <label htmlFor="bowler" className="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-400">Bowler</label>
-                    <input onChange={(e)=>setSecondInningsBowler(e.target.value)} type="text" id="bowler" className="border-b dark:text-gray-900 text-sm block w-full p-1 dark:border-gray-600 dark:placeholder-gray-400 text-white outline-none focus:border-green-800 focus:border-b-2" placeholder="Bowler name"/>
+                    <input onChange={(e)=>setSecondInningsBowler(e.target.value)} type="text" id="bowler" className="block w-full p-1 text-sm text-white border-b outline-none dark:text-gray-900 dark:border-gray-600 dark:placeholder-gray-400 focus:border-green-800 focus:border-b-2" placeholder="Bowler name"/>
                     </div>
                 {/*footer*/}
-                <div className="flex items-center justify-center p-6 border-t border-solid border-blueGray-200 rounded-b">
+                <div className="flex items-center justify-center p-6 border-t border-solid rounded-b border-blueGray-200">
                   <Link
-                    className="bg-emerald-500 text-white active:bg-emerald-600 font-bold uppercase text-sm px-28 py-3 rounded shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150"
+                    className="py-3 mb-1 mr-1 text-sm font-bold text-white uppercase transition-all duration-150 ease-linear rounded shadow outline-none bg-emerald-500 active:bg-emerald-600 px-28 hover:shadow-lg focus:outline-none"
                   onClick={(e)=>startSecondInnings(e)}>
                     Done
                   </Link>
@@ -694,19 +695,19 @@ const CountRuns = ()=>{
               </div>
             </div>
           </div>
-          <div className="opacity-25 fixed inset-0 z-40 bg-black"></div>
+          <div className="fixed inset-0 z-40 bg-black opacity-25"></div>
         </>
       ) : null}
       {showMatchFinishedModal ? (
         <>
           <div
-            className="justify-center items-center flex overflow-x-hidden overflow-y-auto fixed inset-0 z-50 outline-none focus:outline-none"
+            className="fixed inset-0 z-50 flex items-center justify-center overflow-x-hidden overflow-y-auto outline-none focus:outline-none"
           >
-            <div className="relative w-auto my-6 mx-auto max-w-3xl">
+            <div className="relative w-auto max-w-3xl mx-auto my-6">
               {/*content*/}
-              <div className="border-0 rounded-lg shadow-lg relative flex flex-col w-full bg-white outline-none focus:outline-none">
+              <div className="relative flex flex-col w-full bg-white border-0 rounded-lg shadow-lg outline-none focus:outline-none">
                 {/*header*/}
-                <div className="flex items-start justify-between p-5 border-b border-solid border-blueGray-200 rounded-t">
+                <div className="flex items-start justify-between p-5 border-b border-solid rounded-t border-blueGray-200">
                   <h3 className="text-xl font-semibold">
                     Match Finished!
                   </h3>
@@ -716,9 +717,9 @@ const CountRuns = ()=>{
                         <p>{score?score.match_status:""}</p>
                     </div>
                 {/*footer*/}
-                <div className="flex items-center justify-center p-6 border-t border-solid border-blueGray-200 rounded-b">
+                <div className="flex items-center justify-center p-6 border-t border-solid rounded-b border-blueGray-200">
                   <Link
-                    className="bg-emerald-500 text-white active:bg-emerald-600 font-bold uppercase text-sm px-28 py-3 rounded shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150"
+                    className="py-3 mb-1 mr-1 text-sm font-bold text-white uppercase transition-all duration-150 ease-linear rounded shadow outline-none bg-emerald-500 active:bg-emerald-600 px-28 hover:shadow-lg focus:outline-none"
                    onClick={(e)=>{e.preventDefault();navigate("/new_match")}} >
                     Start New Match
                   </Link>
@@ -726,22 +727,22 @@ const CountRuns = ()=>{
               </div>
             </div>
           </div>
-          <div className="opacity-25 fixed inset-0 z-40 bg-black"></div>
+          <div className="fixed inset-0 z-40 bg-black opacity-25"></div>
         </>
       ) : null}
       {loading ? (
         <>
           <div
-            className="justify-center items-center flex overflow-x-hidden overflow-y-auto fixed inset-0 z-50 outline-none focus:outline-none"
+            className="fixed inset-0 z-50 flex items-center justify-center overflow-x-hidden overflow-y-auto outline-none focus:outline-none"
           >
-            <div className="relative w-auto my-6 mx-auto max-w-3xl">
+            <div className="relative w-auto max-w-3xl mx-auto my-6">
               {/*content*/}
               
-              <div className="border-gray-300 h-20 w-20 animate-spin rounded-full border-8 border-t-blue-600" />
+              <div className="w-20 h-20 border-8 border-gray-300 rounded-full animate-spin border-t-blue-600" />
             
             </div>
           </div>
-          <div className="opacity-25 fixed inset-0 z-40 bg-black"></div>
+          <div className="fixed inset-0 z-40 bg-black opacity-25"></div>
         </>
       ) : null}
        <div>
@@ -750,37 +751,37 @@ const CountRuns = ()=>{
       {retire?(
          <>
          <div
-           className="justify-center items-center flex overflow-x-hidden overflow-y-auto fixed inset-0 z-50 outline-none focus:outline-none"
+           className="fixed inset-0 z-50 flex items-center justify-center overflow-x-hidden overflow-y-auto outline-none focus:outline-none"
          >
-           <div className="relative w-auto my-6 mx-auto max-w-3xl">
+           <div className="relative w-auto max-w-3xl mx-auto my-6">
              {/*content*/}
-             <div className="border-0 rounded-lg shadow-lg relative flex flex-col w-full bg-white outline-none focus:outline-none">
+             <div className="relative flex flex-col w-full bg-white border-0 rounded-lg shadow-lg outline-none focus:outline-none">
                {/*header*/}
                <div className="flex items-center justify-between p-2">
-                 <h3 className="text-xl text-green-600 font-semibold">
+                 <h3 className="text-xl font-semibold text-green-600">
                    Select player to retire
                  </h3>
-                 <p onClick={(e)=>setRetire(false)} className="text-xl p-4 hover:cursor-pointer"><RxCross1/></p>
+                 <p onClick={(e)=>setRetire(false)} className="p-4 text-xl hover:cursor-pointer"><RxCross1/></p>
                </div>
                {/*body*/}
                    <div className="p-2">
                     <div className="flex items-center mb-4">
                         <input onChange={(e)=>handleRetiredChange(e)} checked = {retiredData.retired_batsman==="striker"} id="default-radio-1" type="radio" value="striker" name="retired_batsman" className="w-4 h-4 accent-green-600"/>
-                        <label htmlFor="default-radio-1" className="ms-2 text-sm font-medium">{score?(score.updated_data?(score.updated_data.striker_name):("Striker")):("Striker")}</label>
+                        <label htmlFor="default-radio-1" className="text-sm font-medium ms-2">{score?(score.updated_data?(score.updated_data.striker_name):("Striker")):("Striker")}</label>
                     </div>
                     <div className="flex items-center">
                         <input onChange={(e)=>handleRetiredChange(e)}
                         checked = {retiredData.retired_batsman==="non-striker"}
                         id="default-radio-2" type="radio" value="non-striker" name="retired_batsman" className="w-4 h-4 accent-green-600"/>
-                        <label htmlFor="default-radio-2" className="ms-2 text-sm font-medium">{score?(score.updated_data?(score.updated_data.non_striker_name):("Non-striker")):("Non-striker")}</label>
+                        <label htmlFor="default-radio-2" className="text-sm font-medium ms-2">{score?(score.updated_data?(score.updated_data.non_striker_name):("Non-striker")):("Non-striker")}</label>
                     </div>
-                    <label htmlFor="new_batsman" className="block mt-2 mb-2 text-md font-semibold text-green-600">Replaced by</label>
-                    <input onChange={(e)=>handleRetiredChange(e)} type="text" id="new_batsman" name="new_batsman" className="border-b w-full p-1 outline-none focus:border-green-800 focus:border-b-2" placeholder="Batsman name"/>
+                    <label htmlFor="new_batsman" className="block mt-2 mb-2 font-semibold text-green-600 text-md">Replaced by</label>
+                    <input onChange={(e)=>handleRetiredChange(e)} type="text" id="new_batsman" name="new_batsman" className="w-full p-1 border-b outline-none focus:border-green-800 focus:border-b-2" placeholder="Batsman name"/>
                    </div>
                {/*footer*/}
-               <div className="flex items-center justify-center p-6 border-t border-solid border-blueGray-200 rounded-b">
+               <div className="flex items-center justify-center p-6 border-t border-solid rounded-b border-blueGray-200">
                  <button
-                   className="bg-green-600 w-full rounded rounded-md text-white font-bold text-center px-28 py-3"
+                   className="w-full py-3 font-bold text-center text-white bg-green-600 rounded rounded-md px-28"
                   onClick={(e)=>handleRetire(e)}>
                    Done
                  </button>
@@ -788,17 +789,17 @@ const CountRuns = ()=>{
              </div>
            </div>
          </div>
-         <div className="opacity-25 fixed inset-0 z-40 bg-black"></div>
+         <div className="fixed inset-0 z-40 bg-black opacity-25"></div>
        </>
       ):null}
       {panalty?(
          <>
          <div
-           className="justify-center p-2 items-center flex overflow-x-hidden overflow-y-auto fixed inset-0 z-50 outline-none focus:outline-none"
+           className="fixed inset-0 z-50 flex items-center justify-center p-2 overflow-x-hidden overflow-y-auto outline-none focus:outline-none"
          >
-           <div className="relative w-auto my-6 mx-auto max-w-3xl">
+           <div className="relative w-auto max-w-3xl mx-auto my-6">
              {/*content*/}
-             <div className="border-0 shadow-lg relative flex flex-col w-full bg-white outline-none focus:outline-none">
+             <div className="relative flex flex-col w-full bg-white border-0 shadow-lg outline-none focus:outline-none">
                {/*header*/}
                <div className="flex items-center justify-start px-4 py-2">
                  <h3 className="text-xl font-semibold">
@@ -807,15 +808,15 @@ const CountRuns = ()=>{
                </div>
                {/*body*/}
                    <div className="p-2">
-                    <label htmlFor="scored_runs" className="block mt-2 mb-2 text-md text-green-600">Scored runs (including overthrows)?</label>
-                    <input onChange={(e)=>setScoredRuns(e.target.value)} placeholder="0" type="number" id="scored_runs" name="scored_runs" className="border-b w-full p-1 outline-none focus:border-green-800 focus:border-b-2"/>
+                    <label htmlFor="scored_runs" className="block mt-2 mb-2 text-green-600 text-md">Scored runs (including overthrows)?</label>
+                    <input onChange={(e)=>setScoredRuns(e.target.value)} placeholder="0" type="number" id="scored_runs" name="scored_runs" className="w-full p-1 border-b outline-none focus:border-green-800 focus:border-b-2"/>
                    </div>
                    <div className="p-2">
-                    <label htmlFor="panalty_runs" className="block mt-2 mb-2 text-md text-green-600">Panalty runs?</label>
-                    <input onChange={(e)=>setPanaltyRuns(e.target.value)} placeholder="0" type="number" id="panalty_runs" name="panalty_runs" className="border-b w-full p-1 outline-none focus:border-green-800 focus:border-b-2"/>
+                    <label htmlFor="panalty_runs" className="block mt-2 mb-2 text-green-600 text-md">Panalty runs?</label>
+                    <input onChange={(e)=>setPanaltyRuns(e.target.value)} placeholder="0" type="number" id="panalty_runs" name="panalty_runs" className="w-full p-1 border-b outline-none focus:border-green-800 focus:border-b-2"/>
                    </div>
                {/*footer*/}
-               <div className="flex items-center justify-end p-6 border-t border-solid border-blueGray-200 rounded-b">
+               <div className="flex items-center justify-end p-6 border-t border-solid rounded-b border-blueGray-200">
                  <div className="flex gap-4 text-green-600">
                   <p onClick={(e)=>setPanalty(false)}  className="hover:cursor-pointer">CANCEL</p>
                   <p onClick={(e)=>handlePanalty(e)} className="hover:cursor-pointer">OK</p>
@@ -824,45 +825,45 @@ const CountRuns = ()=>{
              </div>
            </div>
          </div>
-         <div className="opacity-25 fixed inset-0 z-40 bg-black"></div>
+         <div className="fixed inset-0 z-40 bg-black opacity-25"></div>
        </>
       ):null}
       <div style={{boxShadow:"0px -5px 20px 2px #888888",bottom:extras?"0":"-100px",transition:"bottom 0.3s ease-in-out"}} className={`h-10 z-40 items-center font-semibold flex justify-start p-3 rounded-t-xl border-t-[1px] border-gray-500  w-full bg-white absolute`}>
             <p className="pt-1">Extras: {score?.updated_data?(score?.updated_data.extras.byes):("0")} B, {score?.updated_data?(score?.updated_data.extras.leg_byes):("0")} LB, {score?.updated_data?(score?.updated_data.extras.wide):("0")} WD, {score?.updated_data?(score?.updated_data.extras.no_ball):("0")} NB, {score?.updated_data?(score?.updated_data.extras.panalty):("0")} P</p>
       </div>
       <div style={{boxShadow:"0px -5px 20px 2px #888888",bottom:partnerships?"0":"-100%",transition:"bottom 0.3s ease-in-out"}} className="w-full max-h-full overflow-y-auto z-50 rounded-t-xl bg-white border-t-[1px] border-gray-500 absolute">
-        <div className="w-full p-2 flex justify-center "><button className="text-xl font-semibold" onClick={(e)=>setPartnerships(false)}><RxCross1/></button></div>
+        <div className="flex justify-center w-full p-2 "><button className="text-xl font-semibold" onClick={(e)=>setPartnerships(false)}><RxCross1/></button></div>
             {
               score?.updated_data?.partnerships.length>0?(
                 score.updated_data.partnerships.map((partnership,index)=>{
                   return<div key={index} className="flex h-24 border-b-[1px] border-gray-400 w-full p-2 justify-evenly items-center">
                   <div className="w-full">
-                    <div className="flex justify-start items-center">
+                    <div className="flex items-center justify-start">
                       <p className="font-semibold">{partnership.striker.player.name}</p>
                     </div>
-                    <div className="flex py-2 justify-end items-center h-8 bg-gray-400">
+                    <div className="flex items-center justify-end h-8 py-2 bg-gray-400">
                         <div style={{width:`${getPercentageWidth(partnership.total_run,partnership.striker_runs)}%`}} className={`flex items-center justify-start bg-green-600`}>
                             <p className="text-white">{partnership.striker_runs}</p>
                         </div>
                     </div>
-                    <div className="flex justify-start items-center">
+                    <div className="flex items-center justify-start">
                       <p className="font-semibold">Extras: {partnership.extras}</p>
                     </div>
                   </div>
-                  <div className="flex w-1/6 h-8 flex-col text-center">
-                    <p className="text-xl text-sm font-semibold">{partnership.total_run}</p>
+                  <div className="flex flex-col w-1/6 h-8 text-center">
+                    <p className="text-sm text-xl font-semibold">{partnership.total_run}</p>
                     <p className="text-xs">({partnership.total_ball})</p>
                   </div>
                   <div className="w-full">
-                    <div className="flex justify-end items-center">
+                    <div className="flex items-center justify-end">
                       <p className="font-semibold">{partnership.non_striker.player.name}</p>
                     </div>
-                    <div className="flex py-2 justify-start items-center h-8 bg-gray-400">
+                    <div className="flex items-center justify-start h-8 py-2 bg-gray-400">
                         <div style={{width:`${getPercentageWidth(partnership.total_run,partnership.non_striker_runs)}%`}} className="flex items-center justify-end bg-green-600">
                             <p className="text-white">{partnership.non_striker_runs}</p>
                         </div>
                     </div>
-                    <div className="flex invisible justify-start items-center">
+                    <div className="flex items-center justify-start invisible">
                       <p className="font-semibold">Extras: 1</p>
                     </div>
                   </div>
