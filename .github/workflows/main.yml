@@ -38,6 +38,7 @@ jobs:
           build-args: |
             VITE_CLIENT_ID=${{ secrets.VITE_CLIENT_ID }}
             VITE_REQUEST_URL=${{ secrets.VITE_REQUEST_URL }}
+            VITE_WS_URL=${{ secrets.VITE_WS_URL }}
             PORT=4173
       - name: Build & Push Backend
         uses: docker/build-push-action@v5
