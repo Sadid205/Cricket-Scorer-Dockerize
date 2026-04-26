@@ -136,7 +136,7 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND':'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [('cricket_scorer-redis-1',6379)]
+            "hosts": [('redis',6379)]
         },
     },
 }
