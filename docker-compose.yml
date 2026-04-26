@@ -34,7 +34,7 @@ services:
         - VITE_REQUEST_URL=${VITE_REQUEST_URL}
         - PORT=5173
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     env_file:
       - ./.env
     volumes:

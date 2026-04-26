@@ -32,13 +32,13 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
-          file: ./frontend/Dockerfile
+          file: ./frontend/Dockerfile.prod
           push: true
           tags: ghcr.io/${{ steps.owner.outputs.owner }}/cricketscorer-frontend:latest
           build-args: |
             VITE_CLIENT_ID=${{ secrets.VITE_CLIENT_ID }}
             VITE_REQUEST_URL=${{ secrets.VITE_REQUEST_URL }}
-            PORT=5173
+            PORT=4173
       - name: Build & Push Backend
         uses: docker/build-push-action@v5
         with:

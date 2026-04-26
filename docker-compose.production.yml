@@ -46,7 +46,7 @@ services:
     env_file:
       - ./.env.production
     ports:
-      - "5173:5173"
+      - "4173:4173"
     networks:
       - cricketscorer-network
     restart: unless-stopped
