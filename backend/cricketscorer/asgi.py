@@ -25,7 +25,7 @@ from match import consumers
 
 
 application = ProtocolTypeRouter({
-    "http": django_asgi_app,
+    "http": dango_asgi_app,
     "websocket": AuthMiddlewareStack(
         URLRouter(
             [
