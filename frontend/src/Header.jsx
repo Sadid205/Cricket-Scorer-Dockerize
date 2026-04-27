@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom"; 
+import { useState } from "react";
 import { FaBars } from "react-icons/fa";
 import { RxCross1 } from "react-icons/rx";
-import { ToastContainer,toast } from "react-toastify";
-import 'react-toastify/dist/ReactToastify.css'
-import logo from "./assets/logo.png"
+import { Link, useNavigate } from "react-router-dom";
+import { ToastContainer, toast } from "react-toastify";
+import 'react-toastify/dist/ReactToastify.css';
+import logo from "./assets/logo.png";
 const Header = ()=>{
     const navigate = useNavigate()
     const [open,setOpen] = useState(false)
@@ -13,8 +13,7 @@ const Header = ()=>{
     const VITE_REQUEST_URL=import.meta.env.VITE_REQUEST_URL
     const Links = [
         { name: "Home", link: "/" },
-        // { name: "Supports", link: "/supports" },
-        // { name: "About", link: "/about" },
+        // { name: "Supports", link: "/supports" }
       ];
     const handleClick = () => {
         setOpen(!open);
