@@ -136,8 +136,8 @@ return (
               <input type="checkbox" name="remember" className="outline-none focus:outline focus:outline-sky-300" />
               <span className="text-xs">Remember me</span>
             </label> */}
-            <a className="text-sm font-medium underline text-foreground" href="#">Forgot
-              password?</a>
+            {/* <a className="text-sm font-medium underline text-foreground" href="#">Forgot
+              password?</a> */}
           </div>
           <div className="flex items-center justify-end mt-4 gap-x-2">
             <a className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-all duration-200 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:ring hover:ring-white" href="/register">Register</a>
