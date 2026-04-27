@@ -84,8 +84,10 @@ class AuthorLogoutApiView(APIView):
         logout(request)
         return Response({"Success":"Logout Success"})
     
-
+from rest_framework.permissions import AllowAny
 class GoogleLogin(APIView):
+       permission_classes = [AllowAny]
+       authenticateion_classes = []
        def post(self, request):
         token = request.data.get('access_token', None)
         if not token:
