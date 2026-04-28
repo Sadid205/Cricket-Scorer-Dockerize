@@ -13,19 +13,18 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cricketscorer.settings')
 
 from django.core.asgi import get_asgi_application
 
-dango_asgi_app = get_asgi_application()
 
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
 from django.urls import re_path
 
-application = get_asgi_application() 
+django_asgi_app = get_asgi_application() 
 
 from match import consumers  
 
 
 application = ProtocolTypeRouter({
-    "http": dango_asgi_app,
+    "http": django_asgi_app,
     "websocket": AuthMiddlewareStack(
         URLRouter(
             [

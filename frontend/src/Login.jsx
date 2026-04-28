@@ -51,7 +51,7 @@ const Login = ()=>{
   const handleLogin = async(response)=>{
     const AccessToken = response.credential
     try{
-      const getResponse = await fetch(`${VITE_REQUEST_URL}author/api/auth/google/`,{method:'POST',headers:{
+      const getResponse = await fetch(`${VITE_REQUEST_URL}author/auth/google/`,{method:'POST',headers:{
         'Content-Type':'application/json'
     },body:JSON.stringify({
       "access_token":AccessToken

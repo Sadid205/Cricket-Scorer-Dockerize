@@ -22,14 +22,18 @@ from match.serializers import MatchSerializer
 from author.models import Author
 import environ
 env = environ.Env()
-environ.Env.read_env()
 
+
+
+class GetCheckStatusView(APIView):
+    def get(self,request):
+        return Response({"Status":"OK"})
 
 class RegistrationView(APIView):
     serializer_class = RegistrationSerializer
     def post(self,request,format=None):
         serializer = self.serializer_class(data=request.data)
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             user = serializer.save()
             token = default_token_generator.make_token(user)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
@@ -87,7 +91,7 @@ class AuthorLogoutApiView(APIView):
 from rest_framework.permissions import AllowAny
 class GoogleLogin(APIView):
        permission_classes = [AllowAny]
-       authenticateion_classes = []
+       authentication_classes = []
        def post(self, request):
         token = request.data.get('access_token', None)
         if not token:
