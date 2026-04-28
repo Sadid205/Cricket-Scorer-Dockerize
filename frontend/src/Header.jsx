@@ -13,7 +13,6 @@ const Header = ()=>{
     const VITE_REQUEST_URL=import.meta.env.VITE_REQUEST_URL
     const Links = [
         { name: "Home", link: "/" },
-        // { name: "Supports", link: "/supports" }
       ];
     const handleClick = () => {
         setOpen(!open);
