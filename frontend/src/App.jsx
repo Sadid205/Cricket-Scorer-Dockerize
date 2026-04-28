@@ -1,21 +1,34 @@
-import { BrowserRouter,Routes,Route } from "react-router-dom"
-import Home from "./Home"
-import NewMatch from "./NewMatch"
+import { useEffect, useState } from "react"
+import { BrowserRouter, Route, Routes } from "react-router-dom"
 import CountRuns from "./CountRuns"
-import SelectOpeningPlayer from "./SelectOpeningPlayer"
 import Header from "./Header"
-import Register from "./Register"
-import Login from "./Login"
-import {ProtectedRoute,ProtectedRouteSOPAndCR} from "./ProtectedRoute"
-import Teams from "./Teams"
-import Players from "./Players"
-import PlayerDetails from "./PlayerDetails"
 import History from "./History"
+import Home from "./Home"
+import Login from "./Login"
+import NewMatch from "./NewMatch"
+import PlayerDetails from "./PlayerDetails"
+import Players from "./Players"
+import { ProtectedRoute, ProtectedRouteSOPAndCR } from "./ProtectedRoute"
+import Register from "./Register"
 import ScoreBoard from "./Scoreboard"
+import SelectOpeningPlayer from "./SelectOpeningPlayer"
+import Teams from "./Teams"
 
 const App = () =>{
-  const Token = localStorage.getItem("Token")
-  const match_id = localStorage.getItem("match_id")
+  const [Token, setToken] = useState(() => localStorage.getItem("Token"))
+  const [match_id, setMatchId] = useState(() => localStorage.getItem("match_id"))
+  useEffect(()=> {
+      const handleStorageChange = () => {
+      setToken(localStorage.getItem("Token"))
+      setMatchId(localStorage.getItem("match_id"))
+    }
+    
+    window.addEventListener("localStorageUpdated", handleStorageChange)
+
+    return () => {
+      window.removeEventListener("localStorageUpdated", handleStorageChange)
+    }
+  },[])
   return (
     <BrowserRouter>
       <Header/>

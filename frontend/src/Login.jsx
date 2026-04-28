@@ -34,6 +34,7 @@ const Login = ()=>{
       const notify = ()=>{
           toast("Login Success!")
       }
+      window.dispatchEvent(new Event("localStorageUpdated"))
       notify()
       navigate("/")
   }else{
@@ -63,9 +64,12 @@ const Login = ()=>{
       localStorage.setItem("Token",`${responseData.Token}`)
       localStorage.setItem("author_id",`${responseData.author_id}`)
       localStorage.setItem("user_id",`${responseData.user_id}`)
+      
+      window.dispatchEvent(new Event("localStorageUpdated"))
       const notify=()=>{
         toast("Login Success!")
       }
+      
       notify()
       navigate("/")
     }else{
